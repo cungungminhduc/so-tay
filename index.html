@@ -122,6 +122,8 @@ ul { padding: 0; list-style: none; }
 .tra-sk { margin: 6px 0 0; color: var(--phu); overflow-wrap: anywhere; }
 .nut-sk { width: 100%; margin-top: 8px; white-space: normal; }
 .nhac-no { flex-basis: 100%; text-align: left; white-space: normal; }
+.tk-kd { margin: 2px 0 4px; color: var(--phu); overflow-wrap: anywhere; }
+.tong-kd { margin: 10px 0 0; overflow-wrap: anywhere; }
 .dong-tra.sap { border-color: var(--vang-vien); }
 .dong-tra.qua_han { border-color: var(--do-vien); background: var(--do-nen); }
 .dong-tra.da_tra { opacity: .75; }
@@ -969,6 +971,30 @@ function keHoachNo(du) {
     thangCon: thangCon, hetVao: thangCon ? kyKe(String(du.homNay || '').slice(0, 7), thangCon) : ''
   };
 }
+
+/* ---------- Hạn mức thẻ: còn dùng được = hạn mức − đang nợ ---------- */
+function hanMucThe(du, maTk) {
+  var hm = 0;
+  lichCua(du).forEach(function (l) { if (l.kieu === 'hm' && l.taiKhoan === maTk) hm = Number(l.soTien) || 0; });
+  return hm;
+}
+
+/* null nếu chưa khai hạn mức; số âm = đã vượt hạn mức */
+function conDungDuoc(du, tk) {
+  if (!tk) return null;
+  var hm = hanMucThe(du, tk.ma);
+  if (!hm) return null;
+  return hm - Math.max(0, -(Number(tk.soDu) || 0));
+}
+
+/* Tài khoản trả nợ mặc định: tài khoản ngân hàng cùng tên ngân hàng với thẻ (TP Bank thẻ → TP Bank tài khoản) */
+function tkCungNganHang(ds, tenThe) {
+  var dau = function (t) { return boDau(String(t || '')).replace(/[^a-z0-9 ]/g, ' ').trim().split(/\s+/)[0].replace(/bank$/, ''); };
+  var khoa = dau(tenThe);
+  if (!khoa) return null;
+  for (var i = 0; i < ds.length; i++) if (ds[i].loai === 'ngan_hang' && dau(ds[i].ten) === khoa) return ds[i];
+  return null;
+}
 </script>
 
 <script id="trang">
@@ -1114,11 +1140,13 @@ function dungDongTk(x, laAn) {
   var so = Number(x.soDu) || 0;
   var chuSo = (laTkNo(x.loai) && so < 0) ? 'Nợ ' + dinhDangTien(-so) : dinhDangTien(so);
   var ma = thoatHtml(x.ma);
+  var kd = x.loai === 'the_tin_dung' ? conDungDuoc(TT.duLieu, x) : null;
   return '<li><div class="tk-d1"><span class="tk-ten">' + thoatHtml(x.ten) + '</span><span class="tk-loai">' + thoatHtml(chuLoaiTk(x.loai)) +
-    '</span><span class="tk-so">' + chuSo + '</span></div><div class="tk-nut">' +
+    '</span><span class="tk-so">' + chuSo + '</span></div>' +
+    (kd !== null ? '<div class="tk-kd">' + chuConDung(TT.duLieu, x) + '</div>' : '') + '<div class="tk-nut">' +
     (laAn ? '' : '<button class="nut-nho" type="button" data-hd="tk-so-du" data-ma="' + ma + '">🔄 Sửa số dư</button>') +
     (!laAn && laTkNo(x.loai) ? '<button class="nut-nho" type="button" data-hd="lich-mo" data-ma="' + ma + '">📅 Các lần trả</button>' +
-      (x.loai === 'the_tin_dung' ? '<button class="nut-nho" type="button" data-hd="han-mo" data-ma="' + ma + '">📆 Hạn trả thẻ</button>' : '') +
+      (x.loai === 'the_tin_dung' ? '<button class="nut-nho" type="button" data-hd="han-mo" data-ma="' + ma + '">⚙️ Hạn trả & hạn mức</button>' : '') +
       '<button class="nut-nho" type="button" data-hd="ls-mo" data-ma="' + ma + '">📜 Các khoản</button>' : '') +
     '<button class="nut-nho" type="button" data-hd="tk-doi-ten" data-ma="' + ma + '">' + (laAn ? '✏️ Đổi tên / bỏ ẩn' : '✏️ Đổi tên / ẩn') + '</button></div></li>';
 }
@@ -1361,7 +1389,10 @@ function dungTinhTrangThu(du) {
     if (cu) chu += ' — máy nhà có bật không?';
   }
   if (kk > 0) chu += ' · ⚠️ ' + kk + ' thư chưa đọc được';
-  return '<p class="tinh-trang-thu' + (cu ? ' vang' : '') + '">' + thoatHtml(chu) + '</p>';
+  var h = '<p class="tinh-trang-thu' + (cu ? ' vang' : '') + '">' + thoatHtml(chu) + '</p>';
+  /* chưa có hẹn giờ đọc thư mỗi giờ: anh chưa chạy menu Cài đặt trong Sheet */
+  if (du.henGioThu === false) h += '<p class="tinh-trang-thu vang">' + thoatHtml('⚠️ App chưa tự đọc thư mỗi giờ. Mở Google Sheet sổ chi tiêu → menu 💰 Sổ chi tiêu → ⚙ Cài đặt / sửa tab, bấm Cho phép (chỉ một lần).') + '</p>';
+  return h;
 }
 
 /* ---------- Gọi máy chủ ---------- */
@@ -3089,12 +3120,24 @@ function dungTinhHinhNo(du) {
   no.forEach(function (x) { tong += x.no; });
   var h = '<div class="the tinh-hinh-no"><h2>' + thoatHtml('💳 Đang nợ: ' + dinhDangTien(tong)) + '</h2><ul class="ds-no">';
   var the = hanThe(du);
+  var tongHm = 0, tongKd = 0, coHm = false;
+  (Array.isArray(du.taiKhoan) ? du.taiKhoan : []).forEach(function (t) {
+    if (!t || t.an || t.loai !== 'the_tin_dung') return;
+    var kd = conDungDuoc(du, t);
+    if (kd === null) return;
+    coHm = true;
+    tongHm += hanMucThe(du, t.ma);
+    tongKd += kd;
+  });
   no.forEach(function (x) {
     h += '<li><span>' + thoatHtml(x.ten) + '</span><strong>' + dinhDangTien(x.no) + '</strong>' +
-      (x.hetVao ? '<span class="nhan-nho">trả xong khoảng ' + thoatHtml(chuThang(x.hetVao)) + '</span>' : '') + nhacNo(du, x, the) +
+      (x.hetVao ? '<span class="nhan-nho">trả xong khoảng ' + thoatHtml(chuThang(x.hetVao)) + '</span>' : '') +
+      (x.loai === 'the_tin_dung' && conDungDuoc(du, tkTheoMa(du, x.ma)) !== null ? '<span class="nhan-nho">' + chuConDung(du, tkTheoMa(du, x.ma)) + '</span>' : '') +
+      nhacNo(du, x, the) +
       (x.loai === 'the_tin_dung' && the[x.ma] ? '<button class="nut-nho nhac-no" type="button" data-hd="sk-mo" data-ma="' + thoatHtml(x.ma) + '">🧾 Gõ số trên sao kê</button>' : '') + '</li>';
   });
   h += '</ul>';
+  if (coHm) h += '<p class="tong-kd">💳 Các thẻ còn dùng được: <strong>' + dinhDangTien(tongKd) + '</strong> (tổng hạn mức ' + dinhDangTien(tongHm) + ')</p>';
   if (sau.length) {
     h += '<p class="tra-sau-nua">🗓️ Các tháng tới phải trả: ' + sau.map(function (x) {
       return thoatHtml(chuThang(x.ky)) + ' <strong>' + dinhDangTien(x.tong) + '</strong>';
@@ -3104,9 +3147,21 @@ function dungTinhHinhNo(du) {
 }
 
 /* Lời nhắc để người dùng khỏi phải tự nhớ: thẻ chưa có hạn trả; số nợ trả sau lệch với các lần trả */
+/* "Còn dùng được 12.800.000 ₫ / hạn mức 30.000.000 ₫" kèm cảnh báo bằng chữ */
+function chuConDung(du, tk) {
+  var kd = conDungDuoc(du, tk);
+  if (kd === null) return '';
+  var hm = hanMucThe(du, tk.ma);
+  if (kd < 0) return '⚠️ Đã vượt hạn mức ' + thoatHtml(dinhDangTien(-kd)) + ' (hạn mức ' + thoatHtml(dinhDangTien(hm)) + ')';
+  return (kd < hm * 0.1 ? '⚠️ Sắp hết hạn mức · ' : '💳 ') + 'Còn dùng được ' + thoatHtml(dinhDangTien(kd)) + ' / hạn mức ' + thoatHtml(dinhDangTien(hm));
+}
+
 function nhacNo(du, x, the) {
   if (x.loai === 'the_tin_dung' && !the[x.ma] && x.no > 0) {
     return '<button class="nut-nho nhac-no" type="button" data-hd="han-mo" data-ma="' + thoatHtml(x.ma) + '">📆 Chưa có hạn trả thẻ — bấm để đặt</button>';
+  }
+  if (x.loai === 'the_tin_dung' && !hanMucThe(du, x.ma)) {
+    return '<button class="nut-nho nhac-no" type="button" data-hd="han-mo" data-ma="' + thoatHtml(x.ma) + '">💳 Chưa khai hạn mức thẻ — bấm để khai</button>';
   }
   if (x.loai === 'tra_sau') {
     var tong = 0;
@@ -3310,10 +3365,11 @@ function timMucTra(du, ma) {
 
 function nhapTra(du, m) {
   var tk = tkTraDuoc(du);
+  var cung = tkCungNganHang(tk, m.tenTk);
   return {
     ma: m.ma, kieu: m.kieu, maTk: m.taiKhoan, che: 'tien', chuPhi: '2%', tuThe: '',
     tenTk: m.tenTk, noiDung: m.noiDung, ky: m.ky, han: m.han, phaiTra: m.soTien, goc: m.goc,
-    chuSoTien: m.soTien > 0 ? String(m.soTien) : '', tuTk: tk.length ? tk[0].ma : '', ngay: String(du.homNay || ''),
+    chuSoTien: m.soTien > 0 ? String(m.soTien) : '', tuTk: cung ? cung.ma : (tk.length ? tk[0].ma : ''), ngay: String(du.homNay || ''),
     dangLuu: false, loiLuu: '', loi: {}
   };
 }
@@ -3377,7 +3433,10 @@ function phanXemDao(du, nhap) {
   var phi = docPhi(nhap.chuPhi, tien);
   if (phi.loi || !tien) return '';
   var tu = nhap.tuThe ? timTk(du, nhap.tuThe) : null;
-  return '= tiền phí ' + dinhDangTien(phi.so) + ' (app ghi vào chi tiêu)' +
+  var kdTu = tu ? conDungDuoc(du, tu) : null;
+  var canhBao = kdTu !== null && tien + phi.so > kdTu ?
+    '<div class="chenh-so">⚠️ Thẻ ' + thoatHtml(tu.ten) + ' chỉ còn dùng được ' + dinhDangTien(Math.max(0, kdTu)) + ' — không đủ ' + dinhDangTien(tien + phi.so) + '.</div>' : '';
+  return canhBao + '= tiền phí ' + dinhDangTien(phi.so) + ' (app ghi vào chi tiêu)' +
     '<div class="nhan-nho">' + thoatHtml(tu ? 'Nợ chuyển từ thẻ ' + nhap.tenTk + ' sang thẻ ' + tu.ten + ', tiền phí cộng vào thẻ ' + tu.ten + '.' :
       'Nợ thẻ ' + nhap.tenTk + ' vẫn còn, cộng thêm tiền phí, để sang tháng sau.') + '</div>';
 }
@@ -3394,7 +3453,10 @@ function dungPhanDao(du, nhap) {
     '<input id="o-dao-phi" class="o" type="text" inputmode="decimal" autocomplete="off" value="' + thoatHtml(nhap.chuPhi) + '">' +
     '<div id="xem-dao" class="xem-tien" aria-live="polite">' + phanXemDao(du, nhap) + '</div></div>' +
     '<div class="nhom-nhap"><h3 class="nhan-hang">Ai trả vào thẻ này</h3><div class="hang-tk">';
-  var ds = [{ ma: '', ten: 'Dịch vụ đáo (quẹt lại chính thẻ này)' }].concat(the.map(function (t) { return { ma: t.ma, ten: 'Thẻ ' + t.ten }; }));
+  var ds = [{ ma: '', ten: 'Dịch vụ đáo (quẹt lại chính thẻ này)' }].concat(the.map(function (t) {
+    var kd = conDungDuoc(du, t);
+    return { ma: t.ma, ten: 'Thẻ ' + t.ten + (kd !== null ? ' (còn dùng được ' + dinhDangTien(Math.max(0, kd)) + ')' : '') };
+  }));
   for (var i = 0; i < ds.length; i++) {
     var chon = (nhap.tuThe || '') === ds[i].ma;
     h += '<button class="chon-tk' + (chon ? ' chon' : '') + '" type="button" data-hd="dao-tu" data-ma="' + thoatHtml(ds[i].ma) +
@@ -3462,9 +3524,10 @@ function dongLichTu(l) {
 
 function nhapLich(du, maTk) {
   var the = hanThe(du)[maTk];
+  var hm = hanMucThe(du, maTk);
   return {
     maTk: maTk, dong: lichConLaiCua(du, maTk).map(dongLichTu), lap: { han: '', chuSoTien: '', chuSoKy: '2' },
-    chuNgayThe: the ? String(the.han) : '', dangLuu: false, loiLuu: '', loi: {}
+    chuNgayThe: the ? String(the.han) : '', chuHanMuc: hm ? String(hm) : '', dangLuu: false, loiLuu: '', loi: {}
   };
 }
 
@@ -3572,17 +3635,30 @@ function dungHopLich(du, nhap) {
   return h + '</div>';
 }
 
-/* Hộp riêng: ngày phải trả thẻ mỗi tháng (một việc) */
+/* Xem trước: hạn mức − đang nợ = còn dùng được */
+function phanXemHanMuc(du, nhap, tk) {
+  var r = docSoTien(nhap.chuHanMuc);
+  if (!r.so || !tk) return '';
+  var no = Math.max(0, -(Number(tk.soDu) || 0));
+  var kd = r.so - no;
+  return '= ' + dinhDangTien(r.so) + '<div class="nhan-nho">Đang nợ ' + dinhDangTien(no) + ' → ' +
+    (kd >= 0 ? 'còn dùng được ' + dinhDangTien(kd) : '⚠️ đã vượt hạn mức ' + dinhDangTien(-kd)) + '</div>';
+}
+
+/* Hộp riêng: hạn trả và hạn mức của thẻ (cùng một việc: khai thông tin thẻ) */
 function dungHopHanThe(du, nhap, tk) {
   var khoa = nhap.dangLuu ? ' disabled' : '';
-  var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Hạn trả thẻ">' +
-    '<div class="hop-dau"><h2>' + thoatHtml('📆 Hạn trả thẻ · ' + tk.ten) + '</h2><button class="nut" type="button" data-hd="lich-dong">✕ Đóng</button></div>' +
-    '<p class="goi-y">👉 Xem trên sao kê thẻ, dòng "Hạn thanh toán". Gõ ngày trong tháng, ví dụ 15. Tới gần ngày đó app sẽ nhắc trong thẻ "Phải trả".</p>' +
-    '<div class="nhom-nhap"><label class="nhan-hang" for="o-lich-ngay-the">Ngày phải trả mỗi tháng</label>' +
+  var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Hạn trả và hạn mức thẻ">' +
+    '<div class="hop-dau"><h2>' + thoatHtml('⚙️ Thẻ ' + tk.ten) + '</h2><button class="nut" type="button" data-hd="lich-dong">✕ Đóng</button></div>' +
+    '<p class="goi-y">👉 Xem trên sao kê hoặc app ngân hàng. Gõ 2 điều về thẻ: ngày phải trả mỗi tháng và hạn mức thẻ.</p>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-lich-ngay-the">Ngày phải trả mỗi tháng (dòng "Hạn thanh toán")</label>' +
     '<input id="o-lich-ngay-the" class="o" type="text" inputmode="numeric" autocomplete="off" placeholder="Ví dụ 15" value="' + thoatHtml(nhap.chuNgayThe) + '">' +
-    loiNo(nhap, 'ngayThe') + '</div><div class="chan-hop">';
+    loiNo(nhap, 'ngayThe') + '</div>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-lich-han-muc">Hạn mức thẻ (ngân hàng cho tiêu tối đa)</label>' +
+    '<input id="o-lich-han-muc" class="o o-tien" type="text" inputmode="decimal" autocomplete="off" placeholder="Ví dụ 30tr" value="' + thoatHtml(nhap.chuHanMuc) + '">' +
+    '<div id="xem-han-muc" class="xem-tien" aria-live="polite">' + phanXemHanMuc(du, nhap, tk) + '</div>' + loiNo(nhap, 'hanMuc') + '</div><div class="chan-hop">';
   if (nhap.loiLuu) h += '<div class="khung do" id="loi-luu" role="alert">' + thoatHtml(nhap.loiLuu) + '</div>';
-  h += '<button class="nut-chinh" type="button" data-hd="lich-han"' + khoa + '>' + (nhap.dangLuu ? '⏳ Đang lưu…' : '💾 Lưu ngày') + '</button>';
+  h += '<button class="nut-chinh" type="button" data-hd="lich-han"' + khoa + '>' + (nhap.dangLuu ? '⏳ Đang lưu…' : '💾 Lưu') + '</button>';
   if (hanThe(du)[tk.ma]) h += '<button class="nut" type="button" data-hd="han-bo"' + khoa + '>Bỏ hạn trả thẻ</button>';
   return h + '<button class="nut" type="button" data-hd="lich-dong">Thôi</button></div></div>';
 }
@@ -3653,7 +3729,11 @@ function dungChiaKy(du, nhap) {
   var tk = timTk(du, nhap.taiKhoan);
   var traSau = !!tk && tk.loai === 'tra_sau';
   if (nhap.chiaKy) nhap.chiaKy.toiThieu = traSau ? 1 : 2;
-  var h = '<div class="nhom-nhap"><button class="nut' + (bat ? ' chon' : '') + '" type="button" data-hd="chia-bat" aria-pressed="' + (bat ? 'true' : 'false') + '">' +
+  var kd = tk && tk.loai === 'the_tin_dung' ? conDungDuoc(du, tk) : null;
+  var tienGo = docSoTien(nhap.chuSoTien).so || 0;
+  var h = kd === null ? '' : '<p class="nhan-nho tk-kd">' + chuConDung(du, tk) +
+    (tienGo > kd ? '<br>⚠️ Khoản này lớn hơn số thẻ còn dùng được.' : '') + '</p>';
+  h += '<div class="nhom-nhap"><button class="nut' + (bat ? ' chon' : '') + '" type="button" data-hd="chia-bat" aria-pressed="' + (bat ? 'true' : 'false') + '">' +
     (bat ? '✓ ' : '') + '🗓️ Trả góp (chia nhiều lần trả)</button>';
   if (!bat) {
     if (traSau && ngayHopLe(nhap.ngay)) {
@@ -3999,9 +4079,31 @@ function luuNhieu() {
 function luuNgayThe() {
   var nhap = NHAP_LICH;
   if (!nhap || nhap.dangLuu) return;
-  var n = soNguyenChu(nhap.chuNgayThe, 0, 31);
-  if (n === null || n === 0) { nhap.loi = { ngayThe: 'Gõ ngày từ 1 đến 31, ví dụ 15.' }; veHopNo(); return; }
-  luuHanThe(nhap, n);
+  var loi = {};
+  var t = {};
+  var chuNgay = String(nhap.chuNgayThe || '').trim();
+  if (chuNgay !== '') {
+    var n = soNguyenChu(chuNgay, 1, 31);
+    if (n === null) loi.ngayThe = 'Gõ ngày từ 1 đến 31, ví dụ 15.'; else t.ngayHan = n;
+  }
+  var chuHm = String(nhap.chuHanMuc || '').trim();
+  if (chuHm !== '') {
+    var r = docSoTien(chuHm);
+    if (r.loi) loi.hanMuc = r.loi; else t.hanMuc = r.so;
+  }
+  if (!loi.ngayThe && !loi.hanMuc && t.ngayHan === undefined && t.hanMuc === undefined) loi.ngayThe = 'Gõ ngày phải trả hoặc hạn mức.';
+  if (loi.ngayThe || loi.hanMuc) { nhap.loi = loi; veHopNo(); return; }
+  nhap.loi = {};
+  nhap.loiLuu = '';
+  nhap.dangLuu = true;
+  veHopNo();
+  goiMay('api_luuThongTinThe', [nhap.maTk, t, TT.ky], function (kq) {
+    nhap.dangLuu = false;
+    if (!kq || typeof kq !== 'object' || !kq.ky) { hongNo(nhap, CHU_MAT_MANG); return; }
+    nhanDuLieuMoi(kq);
+    if (NHAP_LICH === nhap) dongHopNo();
+    baoNhanh('Đã lưu thông tin thẻ' + (t.ngayHan ? ': phải trả ngày ' + t.ngayHan + ' mỗi tháng' : '') + (t.hanMuc ? ' · hạn mức ' + dinhDangTien(t.hanMuc) : ''));
+  }, function (cau) { hongNo(nhap, cau); });
 }
 
 function luuHanThe(nhap, n) {
@@ -4150,7 +4252,13 @@ function xuLyNhapNo(e) {
     } else if (el.id === 'o-lap-han') n.lap.han = el.value;
     else if (el.id === 'o-lap-tien') n.lap.chuSoTien = el.value;
     else if (el.id === 'o-lap-soky') n.lap.chuSoKy = el.value;
-    else if (el.id === 'o-lich-ngay-the') n.chuNgayThe = el.value;
+    else if (el.id === 'o-lich-ngay-the') { n.chuNgayThe = el.value; if (n.loi) delete n.loi.ngayThe; }
+    else if (el.id === 'o-lich-han-muc') {
+      n.chuHanMuc = el.value;
+      if (n.loi) delete n.loi.hanMuc;
+      var xh = document.getElementById('xem-han-muc');
+      if (xh) xh.innerHTML = phanXemHanMuc(TT.duLieu, n, timTk(TT.duLieu, n.maTk));
+    }
   }
 }
 
