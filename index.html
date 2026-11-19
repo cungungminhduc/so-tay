@@ -124,6 +124,8 @@ ul { padding: 0; list-style: none; }
 .nhac-no { flex-basis: 100%; text-align: left; white-space: normal; }
 .tk-kd { margin: 2px 0 4px; color: var(--phu); overflow-wrap: anywhere; }
 .tong-kd { margin: 10px 0 0; overflow-wrap: anywhere; }
+.dong-chon-cho strong { flex: none; font-variant-numeric: tabular-nums; }
+select.o { min-height: 48px; font-size: 16px; }
 .dong-tra.sap { border-color: var(--vang-vien); }
 .dong-tra.qua_han { border-color: var(--do-vien); background: var(--do-nen); }
 .dong-tra.da_tra { opacity: .75; }
@@ -645,7 +647,7 @@ function soDuConLai(taiKhoan) {
   if (!Array.isArray(taiKhoan)) return 0;
   for (var i = 0; i < taiKhoan.length; i++) {
     var t = taiKhoan[i];
-    if (t && (t.loai === 'ngan_hang' || t.loai === 'tien_mat')) tong += Number(t.soDu) || 0;
+    if (t && !t.congViec && (t.loai === 'ngan_hang' || t.loai === 'tien_mat')) tong += Number(t.soDu) || 0; /* tiền việc công ty không tính */
   }
   return tong;
 }
@@ -655,7 +657,7 @@ function duNoThe(taiKhoan) {
   if (!Array.isArray(taiKhoan)) return 0;
   for (var i = 0; i < taiKhoan.length; i++) {
     var t = taiKhoan[i];
-    if (t && laTkNo(t.loai) && Number(t.soDu) < 0) tong += -Number(t.soDu); /* mốc 3: cả trả sau */
+    if (t && !t.congViec && laTkNo(t.loai) && Number(t.soDu) < 0) tong += -Number(t.soDu); /* mốc 3: cả trả sau */
   }
   return tong;
 }
@@ -1105,6 +1107,9 @@ function dungSoDu(du) {
     '<div><span class="nhan-nho">⬇️ Tiền vào tháng</span><strong class="vao">+' + dinhDangTien(t.thu) + '</strong></div>' +
     '<div><span class="nhan-nho">⬆️ Tiền ra tháng</span><strong class="ra">−' + dinhDangTien(t.chi) + '</strong></div>' +
     '</div>';
+  var tienCV = 0, coCV = false;
+  for (var c0 = 0; c0 < tk.length; c0++) if (tk[c0] && tk[c0].congViec && !tk[c0].an) { coCV = true; tienCV += Number(tk[c0].soDu) || 0; }
+  if (coCV) h += '<div class="phu">💼 Tiền việc công ty (không tính vào tiền của anh): ' + dinhDangTien(tienCV) + '</div>';
   var tg = traGopTrongThang(du); /* mốc 3 */
   if (tg.tong > 0) h += '<div class="phu">🛒 Trong tiền ra có ' + dinhDangTien(tg.tong) + ' là mua trả góp / trả sau (tính đủ giá món ngay lúc mua)</div>';
   if (no > 0) {
@@ -1141,13 +1146,14 @@ function dungDongTk(x, laAn) {
   var chuSo = (laTkNo(x.loai) && so < 0) ? 'Nợ ' + dinhDangTien(-so) : dinhDangTien(so);
   var ma = thoatHtml(x.ma);
   var kd = x.loai === 'the_tin_dung' ? conDungDuoc(TT.duLieu, x) : null;
-  return '<li><div class="tk-d1"><span class="tk-ten">' + thoatHtml(x.ten) + '</span><span class="tk-loai">' + thoatHtml(chuLoaiTk(x.loai)) +
+  return '<li><div class="tk-d1"><span class="tk-ten">' + thoatHtml(x.ten) + '</span><span class="tk-loai">' + thoatHtml(chuLoaiTk(x.loai) + (x.congViec ? ' · 💼 việc công ty' : '')) +
     '</span><span class="tk-so">' + chuSo + '</span></div>' +
     (kd !== null ? '<div class="tk-kd">' + chuConDung(TT.duLieu, x) + '</div>' : '') + '<div class="tk-nut">' +
     (laAn ? '' : '<button class="nut-nho" type="button" data-hd="tk-so-du" data-ma="' + ma + '">🔄 Sửa số dư</button>') +
     (!laAn && laTkNo(x.loai) ? '<button class="nut-nho" type="button" data-hd="lich-mo" data-ma="' + ma + '">📅 Các lần trả</button>' +
       (x.loai === 'the_tin_dung' ? '<button class="nut-nho" type="button" data-hd="han-mo" data-ma="' + ma + '">⚙️ Hạn trả & hạn mức</button>' : '') +
-      '<button class="nut-nho" type="button" data-hd="ls-mo" data-ma="' + ma + '">📜 Các khoản</button>' : '') +
+      '<button class="nut-nho" type="button" data-hd="ls-mo" data-ma="' + ma + '">📜 Các khoản</button>' :
+      (!laAn && x.congViec ? '<button class="nut-nho" type="button" data-hd="ls-mo" data-ma="' + ma + '">📜 Các khoản</button>' : '')) +
     '<button class="nut-nho" type="button" data-hd="tk-doi-ten" data-ma="' + ma + '">' + (laAn ? '✏️ Đổi tên / bỏ ẩn' : '✏️ Đổi tên / ẩn') + '</button></div></li>';
 }
 
@@ -1353,15 +1359,41 @@ function dungDongCho(du, d) {
     '<span class="cho-so thieu">' + thoatHtml(goc ? goc + ' — chưa có số VND' : 'Chưa có số tiền') + '</span></button>';
 }
 
+var CHON_CHO = null; /* chọn nhiều trong "Cần xác nhận": null = tắt; { 'k:<mã>' | 't:<mid>': true } */
+var NHAP_XN = null;   /* hộp xác nhận nhiều khoản: { dsMa, taiKhoan, hangMuc, dangLuu, loiLuu, loi } */
+
+function khoaCho(d) { return d.k ? 'k:' + d.k.ma : 't:' + d.t.mid; }
+
+function dungChonCho(du, ds) {
+  var soChon = ds.filter(function (d) { return CHON_CHO[khoaCho(d)]; }).length;
+  var h = '<div class="the can-xn"><h2>' + thoatHtml('🔔 Cần xác nhận (' + ds.length + ')') + '</h2>' +
+    '<p class="goi-y">👉 Đánh dấu các khoản rồi bấm một nút bên dưới. Đã chọn ' + soChon + ' khoản.</p>' +
+    '<button class="nut nut-het" type="button" data-hd="cho-tat-ca">' + (soChon === ds.length ? '☐ Bỏ chọn tất cả' : '☑️ Chọn tất cả (' + ds.length + ')') + '</button>';
+  for (var i = 0; i < ds.length; i++) {
+    var d = ds[i];
+    var khoa = khoaCho(d);
+    var ten = d.k ? (d.k.ghiChu || '(không có ghi chú)') : (d.t.noiDung || d.t.nganHang || '(thư ngân hàng)');
+    var so = d.k ? moTaKhoan(du, d.k).so : (tienGocThu(d.t) || 'Chưa có số tiền');
+    h += '<label class="dong-an dong-nhieu dong-chon-cho"><input type="checkbox" id="o-cho-' + i + '" data-khoa="' + thoatHtml(khoa) + '"' + (CHON_CHO[khoa] ? ' checked' : '') + '>' +
+      '<span class="trai">' + thoatHtml(ngayGioNgan(d.ngayGio) + ' · ' + catChu(ten, 50)) + '</span><strong>' + thoatHtml(so) + '</strong></label>';
+  }
+  var khoaNut = soChon ? '' : ' disabled';
+  return h + '<div class="tra-nut"><button class="nut-chinh" type="button" data-hd="cho-xn-mo"' + khoaNut + '>✅ Xác nhận các khoản đã chọn</button>' +
+    '<button class="nut" type="button" data-hd="cho-bo"' + khoaNut + '>🗑 Bỏ các khoản đã chọn</button></div>' +
+    '<button class="nut nut-het" type="button" data-hd="cho-chon">Thôi chọn nhiều</button></div>';
+}
+
 /* moHet (tuỳ chọn): mở đủ mọi dòng; không truyền thì theo MO_CHO */
 function dungCanXacNhan(du, moHet) {
   if (!du || typeof du !== 'object') return '';
   var ds = dsCanXacNhan(du);
   if (!ds.length) return '';
+  if (CHON_CHO) return dungChonCho(du, ds) + '';
   var het = moHet === undefined ? MO_CHO : !!moHet;
   var hien = het ? ds : ds.slice(0, TOI_DA_DONG_CHO);
   var h = '<div class="the can-xn"><h2>' + thoatHtml('🔔 Cần xác nhận (' + ds.length + ')') + '</h2>' +
-    '<p class="goi-y">👉 Em tự ghi từ thư ngân hàng. Chạm từng khoản để kiểm rồi bấm Lưu.</p>';
+    '<p class="goi-y">👉 Em tự ghi từ thư ngân hàng. Chạm từng khoản để kiểm rồi bấm Lưu.' + (ds.length >= 2 ? ' Nhiều khoản thì bấm "☑️ Chọn nhiều".' : '') + '</p>' +
+    (ds.length >= 2 ? '<button class="nut nut-het" type="button" data-hd="cho-chon">☑️ Chọn nhiều để xác nhận / bỏ một lần</button>' : '');
   for (var i = 0; i < hien.length; i++) h += dungDongCho(du, hien[i]);
   if (hien.length < ds.length) h += '<button class="nut nut-het" type="button" data-hd="cho-het">Xem tất cả (' + ds.length + ')</button>';
   return h + dungTinhTrangThu(du) + '</div>';
@@ -2130,6 +2162,17 @@ function xuLyBamGhi(hd, el) {
   if (hd === 'cho-khoan') { moHopSua(el.getAttribute('data-ma') || ''); return; }
   if (hd === 'cho-thu') { moHopThu(el.getAttribute('data-mid') || ''); return; }
   if (hd === 'cho-het') { MO_CHO = true; veLai(); return; }
+  if (hd === 'cho-chon') { CHON_CHO = CHON_CHO ? null : {}; veLai(); return; }
+  if (hd === 'cho-tat-ca') {
+    var dsCho = dsCanXacNhan(TT.duLieu);
+    var het = dsCho.every(function (d) { return CHON_CHO && CHON_CHO[khoaCho(d)]; });
+    CHON_CHO = {};
+    if (!het) dsCho.forEach(function (d) { CHON_CHO[khoaCho(d)] = true; });
+    veLai();
+    return;
+  }
+  if (hd === 'cho-bo') { boChoDaChon(); return; }
+  if (hd === 'cho-xn-mo') { moHopXacNhanNhieu(); return; }
   if (hd === 'bao-nut') {
     var b = BAO;
     tatBao();
@@ -2458,6 +2501,8 @@ function dungHopDoiTen(du, nhap) {
     '<div class="nhom-nhap"><label class="dong-an"><input type="checkbox" id="o-tk-an"' + (nhap.an ? ' checked' : '') + '><span>' +
     (nhap.daAn ? 'Đang ẩn — bỏ đánh dấu để hiện lại' : 'Ẩn tài khoản này (đã đóng, không dùng nữa)') + '</span></label>' +
     '<span class="nhan-nho">Chỉ ẩn được khi số dư bằng 0.</span></div>' +
+    (laTkNo(nhap.loai) ? '' : '<div class="nhom-nhap"><label class="dong-an"><input type="checkbox" id="o-tk-cv"' + (nhap.congViec ? ' checked' : '') + '><span>' +
+      '💼 Tài khoản việc công ty — tiền ra vào ở đây (nhận tiền công ty, trả lương công nhân…) không tính vào chi tiêu và số dư của anh</span></label></div>') +
     dungChanTk(nhap, '💾 Lưu') + '</div>';
 }
 
@@ -2494,7 +2539,7 @@ function dongHopTk() {
 
 function nhapTkMoi(kieu, tk) {
   return {
-    kieu: kieu, ma: tk ? tk.ma : '', ten: tk ? String(tk.ten) : '', loai: tk ? tk.loai : '', chuSoDu: '',
+    kieu: kieu, ma: tk ? tk.ma : '', ten: tk ? String(tk.ten) : '', loai: tk ? tk.loai : '', chuSoDu: '', congViec: tk ? !!tk.congViec : false,
     an: tk ? !!tk.an : false, daAn: tk ? !!tk.an : false, dangLuu: false, loiLuu: '', loi: {}
   };
 }
@@ -2546,7 +2591,7 @@ function luuTk() {
   } else if (nhap.kieu === 'ten') {
     tenMoi = String(nhap.ten === undefined || nhap.ten === null ? '' : nhap.ten).trim();
     if (tenMoi === '') loi = { ten: CHU_LOI_TEN_TK };
-    else { ham = 'api_luuTaiKhoan'; tham = [{ ma: nhap.ma, ten: tenMoi, an: !!nhap.an }, TT.ky]; }
+    else { ham = 'api_luuTaiKhoan'; tham = [{ ma: nhap.ma, ten: tenMoi, an: !!nhap.an, congViec: !!nhap.congViec }, TT.ky]; }
   } else {
     var rk = kiemTaiKhoan(nhap);
     if (!rk.tk) loi = rk.loi;
@@ -2614,6 +2659,8 @@ function xuLyNhapTk(e) {
     capNhatXemTk();
   } else if (el.id === 'o-tk-an') {
     NHAP_TK.an = !!el.checked;
+  } else if (el.id === 'o-tk-cv') {
+    NHAP_TK.congViec = !!el.checked;
   }
 }
 
@@ -3037,7 +3084,7 @@ var NHAP_KE = null;   /* mốc 3b: hộp kế hoạch giảm nợ: { chu, dangLu
 var HD_NO = ['tra-mo', 'tra-tk', 'tra-luu', 'tra-dong', 'lich-mo', 'lich-dong', 'lich-them', 'lich-xoa', 'lich-han', 'chia-bat',
   'tra-che', 'dao-tu', 'ke-mo', 'ke-luu', 'ke-bo', 'ke-dong',
   'lich-dong-them', 'lich-dong-bo', 'lich-lap', 'lich-luu', 'tra-nhieu', 'nh-tk', 'nh-luu', 'nh-dong',
-  'dao-mo', 'han-mo', 'han-bo', 'ls-mo', 'ls-sua', 'ls-dong', 'sk-mo', 'sk-luu', 'sk-dong', 'dao-bo', 'tra-lai'];
+  'dao-mo', 'han-mo', 'han-bo', 'ls-mo', 'ls-sua', 'ls-dong', 'sk-mo', 'sk-luu', 'sk-dong', 'dao-bo', 'tra-lai', 'xn-tk', 'xn-luu', 'xn-dong'];
 
 function chuNgayDayDu(han) {
   var s = String(han || '');
@@ -3302,6 +3349,102 @@ function xoaVaTraLai(maLich) {
   }, function (cau) { luuHong(nhap, cau); });
 }
 
+/* ---- chọn nhiều trong "Cần xác nhận": bỏ / xác nhận một lần ---- */
+
+function daChonCho() {
+  var kq = { ma: [], mid: [] };
+  if (!CHON_CHO) return kq;
+  dsCanXacNhan(TT.duLieu).forEach(function (d) {
+    if (!CHON_CHO[khoaCho(d)]) return;
+    if (d.k) kq.ma.push(d.k.ma); else kq.mid.push(d.t.mid);
+  });
+  return kq;
+}
+
+function boChoDaChon() {
+  var c = daChonCho();
+  if (!c.ma.length && !c.mid.length) return;
+  var xong = function (kq) {
+    nhanDuLieuMoi(kq);
+    CHON_CHO = null;
+    veLai();
+    var chu = 'Đã bỏ ' + (c.ma.length + c.mid.length) + ' khoản';
+    if (c.ma.length) baoNhanh(chu, '↩️ Hoàn tác', function () { hoanTacNhieu(c.ma); }); else baoNhanh(chu);
+  };
+  var hong = function (cau) { baoNhanh('Chưa bỏ được: ' + cauNgan(cau) + '.'); };
+  var boThu = function (kqTruoc) {
+    if (!c.mid.length) { xong(kqTruoc); return; }
+    goiMay('api_boThu', [c.mid, TT.ky], function (kq) { if (!kq || !kq.ky) { hong(CHU_MAT_MANG); return; } xong(kq); }, hong);
+  };
+  if (c.ma.length) goiMay('api_xoaNhieu', [c.ma, TT.ky], function (kq) { if (!kq || !kq.ky) { hong(CHU_MAT_MANG); return; } boThu(kq); }, hong);
+  else boThu(null);
+}
+
+function hoanTacNhieu(ds) {
+  goiMay('api_hoanTacNhieu', [ds, TT.ky], function (kq) {
+    if (!kq || typeof kq !== 'object' || !kq.ky) { baoNhanh('Chưa lấy lại được: ' + cauNgan(CHU_MAT_MANG) + '.'); return; }
+    nhanDuLieuMoi(kq);
+    baoNhanh('Đã lấy lại ' + ds.length + ' khoản.');
+  }, function (cau) { baoNhanh('Chưa lấy lại được: ' + cauNgan(cau) + '.'); });
+}
+
+function moHopXacNhanNhieu() {
+  var du = TT.duLieu;
+  var c = daChonCho();
+  if (!du || dangMoHopKhac() || !c.ma.length) { if (!c.ma.length && c.mid.length) baoNhanh('Thư chưa có số tiền thì chạm từng thư để gõ số.'); return ''; }
+  var tk = dsTaiKhoanHien(du, '', '');
+  NHAP_XN = { dsMa: c.ma, boQuaThu: c.mid.length, taiKhoan: tk.length === 1 ? tk[0].ma : '', hangMuc: '', dangLuu: false, loiLuu: '', loi: {} };
+  var html = dungHopXacNhanNhieu(du, NHAP_XN);
+  moHop(html);
+  return html;
+}
+
+function dungHopXacNhanNhieu(du, nhap) {
+  var tk = dsTaiKhoanHien(du, nhap.taiKhoan, '');
+  var hm = (du && Array.isArray(du.hangMuc) ? du.hangMuc : []).filter(function (x) { return x && x.kieu === 'chi' && !x.an; });
+  var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Xác nhận nhiều khoản">' +
+    '<div class="hop-dau"><h2>' + thoatHtml('✅ Xác nhận ' + nhap.dsMa.length + ' khoản') + '</h2><button class="nut" type="button" data-hd="xn-dong">✕ Đóng</button></div>' +
+    '<p class="goi-y">👉 Chọn một tài khoản và một hạng mục dùng chung cho cả ' + nhap.dsMa.length + ' khoản. Khoản nào khác thì sửa riêng sau.' +
+    (nhap.boQuaThu ? ' (' + nhap.boQuaThu + ' thư chưa có số tiền: chạm từng thư để gõ số.)' : '') + '</p>' +
+    '<div class="nhom-nhap"><h3 class="nhan-hang">Trả bằng tài khoản</h3><div class="hang-tk">';
+  for (var i = 0; i < tk.length; i++) {
+    var chon = tk[i].ma === nhap.taiKhoan;
+    h += '<button class="chon-tk' + (chon ? ' chon' : '') + '" type="button" data-hd="xn-tk" data-ma="' + thoatHtml(tk[i].ma) +
+      '" aria-pressed="' + (chon ? 'true' : 'false') + '">' + (chon ? '✓ ' : '') + thoatHtml(tk[i].ten) + '</button>';
+  }
+  h += '</div>' + loiNo(nhap, 'taiKhoan') + '</div>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-xn-hm">Hạng mục</label><select id="o-xn-hm" class="o"><option value="">— Chọn hạng mục —</option>';
+  var nhom = '';
+  for (var j = 0; j < hm.length; j++) {
+    if (hm[j].nhom !== nhom) { if (nhom) h += '</optgroup>'; nhom = hm[j].nhom; h += '<optgroup label="' + thoatHtml(nhom) + '">'; }
+    h += '<option value="' + thoatHtml(hm[j].ma) + '"' + (hm[j].ma === nhap.hangMuc ? ' selected' : '') + '>' + thoatHtml(hm[j].bieuTuong + ' ' + hm[j].mucCon) + '</option>';
+  }
+  if (nhom) h += '</optgroup>';
+  h += '</select>' + loiNo(nhap, 'hangMuc') + '</div>';
+  return h + dungChanNo(nhap, '💾 Xác nhận cả ' + nhap.dsMa.length + ' khoản', 'xn-luu', 'xn-dong') + '</div>';
+}
+
+function luuXacNhanNhieu() {
+  var nhap = NHAP_XN;
+  if (!nhap || nhap.dangLuu) return;
+  var loi = {};
+  if (!nhap.taiKhoan) loi.taiKhoan = 'Chọn tài khoản.';
+  if (!nhap.hangMuc) loi.hangMuc = 'Chọn hạng mục.';
+  if (loi.taiKhoan || loi.hangMuc) { nhap.loi = loi; veHopNo(); return; }
+  nhap.loi = {};
+  nhap.loiLuu = '';
+  nhap.dangLuu = true;
+  veHopNo();
+  goiMay('api_xacNhanNhieu', [nhap.dsMa, { taiKhoan: nhap.taiKhoan, hangMuc: nhap.hangMuc }, TT.ky], function (kq) {
+    nhap.dangLuu = false;
+    if (!kq || typeof kq !== 'object' || !kq.ky) { hongNo(nhap, CHU_MAT_MANG); return; }
+    CHON_CHO = null;
+    nhanDuLieuMoi(kq);
+    if (NHAP_XN === nhap) dongHopNo();
+    baoNhanh('Đã xác nhận ' + nhap.dsMa.length + ' khoản.');
+  }, function (cau) { hongNo(nhap, cau); });
+}
+
 /* ---- hộp xem các khoản của một tài khoản nợ (mọi tháng) ---- */
 
 var NHAP_LS = null; /* { maTk } */
@@ -3315,10 +3458,12 @@ function dongLichSu(du, k, maTk) {
   else tang = -tien; /* sửa số dư: số âm = nợ thêm */
   var ten = k.loai === 'chuyen' ? (k.taiKhoanDen === maTk ? 'Trả nợ' : 'Chuyển đi') :
     k.loai === 'dieu_chinh' ? 'Cập nhật số nợ' : tenHangMuc(du, k.hangMuc).mucCon || 'Mua';
+  var tkLs = tkTheoMa(du, maTk);
+  var chuTang = tkLs && !laTkNo(tkLs.loai) ? (tang >= 0 ? 'Tiền ra ' : 'Tiền vào ') : (tang >= 0 ? 'Nợ tăng ' : 'Nợ giảm ');
   return '<button class="dong-cho dong-ls" type="button" data-hd="ls-sua" data-ma="' + thoatHtml(k.ma) + '">' +
     '<span class="trai"><span class="cho-ngay">' + thoatHtml(chuNgayDayDu(String(k.ngayGio || '').slice(0, 10)) + ' · ' + ten) + '</span>' +
     '<span class="cho-ghi">' + thoatHtml(catChu(k.ghiChu || '', 60)) + '</span></span>' +
-    '<span class="cho-so">' + (tang >= 0 ? 'Nợ tăng ' : 'Nợ giảm ') + thoatHtml(dinhDangTien(Math.abs(tang))) + '</span></button>';
+    '<span class="cho-so">' + chuTang + thoatHtml(dinhDangTien(Math.abs(tang))) + '</span></button>';
 }
 
 function dungHopLichSu(du, nhap) {
@@ -3328,7 +3473,7 @@ function dungHopLichSu(du, nhap) {
   });
   var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Các khoản">' +
     '<div class="hop-dau"><h2>' + thoatHtml('📜 Các khoản · ' + (tk ? tk.ten : '')) + '</h2><button class="nut" type="button" data-hd="ls-dong">✕ Đóng</button></div>' +
-    '<p class="goi-y">👉 Mọi lần mua, trả, phí của tài khoản này (mới nhất ở trên). Ghi nhầm thì chạm vào để sửa hoặc xoá.</p>';
+    '<p class="goi-y">👉 Mọi khoản của tài khoản này (mới nhất ở trên). Ghi nhầm thì chạm vào để sửa hoặc xoá.</p>';
   if (!ds.length) h += '<p class="goi-y">Chưa có khoản nào.</p>';
   for (var i = 0; i < ds.length; i++) h += dongLichSu(du, ds[i], nhap.maTk);
   return h + '<div class="chan-hop"><button class="nut" type="button" data-hd="ls-dong">Đóng</button></div></div>';
@@ -3755,14 +3900,14 @@ function dungChiaKy(du, nhap) {
 /* ---- chạm document ---- */
 
 function veHopNo() {
-  if (typeof document === 'undefined' || (!NHAP_TRA && !NHAP_LICH && !NHAP_KE && !NHAP_NHIEU && !NHAP_LS && !NHAP_SK)) return;
+  if (typeof document === 'undefined' || (!NHAP_TRA && !NHAP_LICH && !NHAP_KE && !NHAP_NHIEU && !NHAP_LS && !NHAP_SK && !NHAP_XN)) return;
   var lop = document.getElementById('lop-phu');
   if (!lop) return;
   var cu = lop.querySelector('.hop');
   var cuon = cu ? cu.scrollTop : 0;
   lop.innerHTML = NHAP_TRA ? dungHopTra(TT.duLieu, NHAP_TRA) : NHAP_KE ? dungHopKe(TT.duLieu, NHAP_KE) :
     NHAP_NHIEU ? dungHopNhieu(TT.duLieu, NHAP_NHIEU) : NHAP_LS ? dungHopLichSu(TT.duLieu, NHAP_LS) :
-    NHAP_SK ? dungHopSaoKe(TT.duLieu, NHAP_SK) : dungHopLich(TT.duLieu, NHAP_LICH);
+    NHAP_SK ? dungHopSaoKe(TT.duLieu, NHAP_SK) : NHAP_XN ? dungHopXacNhanNhieu(TT.duLieu, NHAP_XN) : dungHopLich(TT.duLieu, NHAP_LICH);
   var moi = lop.querySelector('.hop');
   if (moi) moi.scrollTop = cuon;
 }
@@ -3774,11 +3919,12 @@ function dongHopNo() {
   NHAP_NHIEU = null;
   NHAP_LS = null;
   NHAP_SK = null;
+  NHAP_XN = null;
   dongHop();
 }
 
 function dangMoHopKhac() {
-  return !!(NHAP || NHAP_TK || NHAP_NS || NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK);
+  return !!(NHAP || NHAP_TK || NHAP_NS || NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK || NHAP_XN);
 }
 
 function moHopTra(ma) {
@@ -3813,7 +3959,7 @@ function moHopLich(maTk) {
 function hongNo(nhap, cau) {
   nhap.dangLuu = false;
   nhap.loiLuu = 'Chưa lưu được: ' + cauNgan(cau) + '.';
-  if (NHAP_TRA === nhap || NHAP_LICH === nhap || NHAP_KE === nhap || NHAP_NHIEU === nhap || NHAP_SK === nhap) {
+  if (NHAP_TRA === nhap || NHAP_LICH === nhap || NHAP_KE === nhap || NHAP_NHIEU === nhap || NHAP_SK === nhap || NHAP_XN === nhap) {
     veHopNo();
     if (typeof document !== 'undefined') {
       var el = document.getElementById('loi-luu');
@@ -4125,6 +4271,9 @@ function xuLyBamNo(hd, el) {
   if (hd === 'tra-mo') { moHopTra(ma); return; }
   if (hd === 'dao-mo') { moHopDao(ma); return; }
   if (hd === 'sk-mo') { moHopSaoKe(ma); return; }
+  if (hd === 'xn-dong') { dongHopNo(); return; }
+  if (hd === 'xn-luu') { luuXacNhanNhieu(); return; }
+  if (hd === 'xn-tk') { if (NHAP_XN) { NHAP_XN.taiKhoan = ma; if (NHAP_XN.loi) delete NHAP_XN.loi.taiKhoan; veHopNo(); } return; }
   if (hd === 'sk-dong') { dongHopNo(); return; }
   if (hd === 'sk-luu') { luuSaoKe(); return; }
   if (hd === 'dao-bo') { boDao(ma, el.getAttribute('data-ky') || ''); return; }
@@ -4189,6 +4338,14 @@ function xuLyBamNo(hd, el) {
 function xuLyNhapNo(e) {
   var el = e.target;
   if (!el || !el.id) return;
+  /* chọn nhiều trong "Cần xác nhận" */
+  if (CHON_CHO && /^o-cho-\d+$/.test(el.id)) {
+    var kc = el.getAttribute('data-khoa') || '';
+    if (el.checked) CHON_CHO[kc] = true; else delete CHON_CHO[kc];
+    gan('can-xac-nhan', dungCanXacNhan(TT.duLieu));
+    return;
+  }
+  if (NHAP_XN && el.id === 'o-xn-hm') { NHAP_XN.hangMuc = el.value; if (NHAP_XN.loi) delete NHAP_XN.loi.hangMuc; return; }
   if (NHAP && NHAP.chiaKy && /^o-chia-/.test(el.id)) {
     var c = NHAP.chiaKy;
     if (el.id === 'o-chia-so') c.chuSoKy = el.value;
@@ -4306,7 +4463,7 @@ if (typeof document !== 'undefined') {
   document.addEventListener('input', xuLyNhapNo);
   document.addEventListener('change', xuLyNhapNo);
   document.addEventListener('keydown', function (e) {
-    if ((e.key === 'Escape' || e.key === 'Esc') && (NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK)) { e.preventDefault(); dongHopNo(); }
+    if ((e.key === 'Escape' || e.key === 'Esc') && (NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK || NHAP_XN)) { e.preventDefault(); dongHopNo(); }
   });
   document.addEventListener('input', xuLyNhapNs);
   document.addEventListener('focusout', xuLyRoiNs);
