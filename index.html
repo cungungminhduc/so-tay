@@ -421,6 +421,42 @@ select.o { min-height: 48px; font-size: 16px; }
 .tinh-trang-thu { margin-top: 12px; padding: 8px 10px; border-radius: 10px; font-size: 16px; color: var(--phu); overflow-wrap: anywhere; }
 .tinh-trang-thu.vang { background: var(--vang-nen); border: 1px solid var(--vang-vien); color: var(--chu); font-weight: 600; }
 #tinh-trang-thu .tinh-trang-thu { margin-top: 14px; }
+/* mốc 4 — học từ maybe: ghép khoản · em xếp sẵn · khoản một lần · tháng nào cũng trả · so tháng trước · qua các tháng */
+.ngay-tong { font-weight: 600; }
+.so-sanh { margin-top: 10px; font-size: 16px; font-weight: 600; overflow-wrap: anywhere; }
+.ghep { margin: 6px 0 4px; padding: 10px 12px; border: 2px dashed var(--vang-vien); border-radius: 12px; background: var(--vang-nen); }
+.ghep-cau { font-weight: 700; overflow-wrap: anywhere; }
+.ghep-phu { margin-top: 4px; font-size: 16px; overflow-wrap: anywhere; }
+.ghep .tra-nut button { flex: 1 1 150px; }
+.nhan-xep { display: block; margin-top: 2px; font-size: 16px; font-weight: 700; color: var(--chu-so-du); overflow-wrap: anywhere; }
+.xep-san-khoi { margin: 8px 0; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--vao); background: var(--the); }
+.xep-san-khoi .goi-y { margin: 0 0 8px; font-size: 16px; }
+.xep-san-khoi .nut-chinh { width: 100%; }
+.ds-qt li { padding: 10px 0; border-bottom: 1px solid var(--vien); }
+.qt-chu { font-weight: 700; overflow-wrap: anywhere; }
+.qt-dich { margin: 2px 0 6px; overflow-wrap: anywhere; }
+.nut-mot-lan { width: 100%; text-align: left; }
+.nut-mot-lan.chon { border: 3px solid var(--chon-vien); padding: 5px 11px; }
+.nut-mot-lan .o-danh { flex: none; font-size: 22px; line-height: 1; }
+.nut-mot-lan .nhan-nho { margin: 2px 0 0; font-weight: 400; }
+.dong-hd { padding: 10px 0; border-bottom: 1px solid var(--vien); }
+.dong-hd .tk-d1 { display: flex; justify-content: space-between; gap: 10px; font-weight: 700; }
+.dong-hd .tk-d1 span { min-width: 0; overflow-wrap: anywhere; }
+.dong-hd .tk-d1 strong { flex: none; white-space: nowrap; }
+.dong-hd .phu { font-size: 16px; color: var(--phu); overflow-wrap: anywhere; }
+.dong-hd .nut-nho { margin-top: 6px; }
+.ns-goi-y { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; font-size: 16px; color: var(--phu); }
+.ns-goi-y span { flex: 1 1 160px; min-width: 0; }
+.ns-goi-y .nut-nho { flex: none; font-weight: 700; color: var(--chu); }
+.qua-thang { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(127, 127, 127, .35); }
+.qua-thang .nho { font-weight: 700; }
+.qua-thang li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; padding: 6px 0; border-bottom: 1px solid var(--vien); font-size: 16px; }
+.qua-thang li span:first-child { flex: 1 1 auto; min-width: 0; }
+.qua-thang li strong { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.qua-thang .doi { flex-basis: 100%; text-align: right; font-weight: 700; }
+.qua-thang .doi.tang { color: var(--vao); }
+.qua-thang .doi.giam { color: var(--ra); }
+#ung-dung[data-trang="chi"] > #hoa-don { display: none; }
 .bao-thu { margin: 4px 0 0; padding: 10px 12px; font-weight: 600; }
 .thu-tt { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: var(--the); border: 1px solid var(--vien); }
 .thu-tt dt { color: var(--phu); font-size: 16px; }
@@ -442,6 +478,7 @@ body.cho::before {
 <section id="can-xac-nhan"></section>
 <section id="so-du"><div class="khung">⏳ Đang mở sổ… Lần đầu có thể mất 5–10 giây, đừng tải lại trang.</div></section>
 <section id="bang-no"></section>
+<section id="hoa-don"></section>
 <section id="phai-tra"></section>
 <section id="tinh-hinh-no"></section>
 <section id="sap-thu"></section>
@@ -651,6 +688,7 @@ function chiTheoNgay(khoan, ky) {
 
 function tienDoNganSach(nganSach, khoan, hangMuc) {
   if (!Array.isArray(nganSach)) return [];
+  khoan = khoanTinhNganSach(khoan); /* mốc 4: khoản một lần không tính vào ngân sách */
   var daChiNhom = {};
   var nhom = chiTheoNhom(khoan, hangMuc);
   for (var i = 0; i < nhom.length; i++) daChiNhom[nhom[i].nhom] = nhom[i].soTien;
@@ -1217,6 +1255,7 @@ function phaiTraSap(du, soNgay) {
   for (var k = ky; k <= den.slice(0, 7); k = kyKe(k, 1)) {
     phaiTraThang(du, k).muc.forEach(function (m) { if (!m.daTra && !m.daoHan && String(m.han) <= den) muc.push(m); });
   }
+  hoaDonSap(du, homNay, den).forEach(function (m) { muc.push(m); }); /* mốc 4 */
   muc.forEach(function (m) {
     m.dinhDao = (m.kieu === 'the' || m.kieu === 'sk') && !!dd[m.taiKhoan + '|' + m.han];
     m.phiDao = Math.round((Number(m.soTien) || 0) * PHI_DAO_UOC);
@@ -1240,6 +1279,62 @@ function phaiTraSap(du, soNgay) {
   kq.tong = cong;
   kq.conLai = coTien - cong;
   return kq;
+}
+
+/* ---------- Mốc 4 (học từ maybe): khoản một lần · khoản tháng nào cũng trả · so với tháng trước — hàm thuần ---------- */
+
+/* Khoản tính vào ngân sách: bỏ khoản một lần (mua điện thoại, viện phí…) */
+function khoanTinhNganSach(khoan) {
+  if (!Array.isArray(khoan)) return khoan;
+  return khoan.filter(function (k) { return !(k && k.motLan); });
+}
+
+/* Tổng khoản một lần trong danh sách: { so, tien } */
+function khoanMotLan(khoan) {
+  var kq = { so: 0, tien: 0 };
+  (Array.isArray(khoan) ? khoan : []).forEach(function (k) {
+    if (k && k.motLan && k.loai === 'chi') { kq.so++; kq.tien += Number(k.soTien) || 0; }
+  });
+  return kq;
+}
+
+/* Tên khoản tháng nào cũng trả: ghi chú anh đặt, không thì tên mục con */
+function tenHoaDon(du, b) {
+  if (b && b.ghiChu) return String(b.ghiChu);
+  var ds = du && Array.isArray(du.hangMuc) ? du.hangMuc : [];
+  for (var i = 0; i < ds.length; i++) if (ds[i] && ds[i].ma === b.hangMuc) return String(ds[i].mucCon);
+  return 'Khoản hằng tháng';
+}
+
+/* Lần chưa trả của khoản tháng nào cũng trả, hạn từ đầu tháng này tới `den`. Chỉ khoản trả bằng ngân hàng / tiền mặt
+   (trả bằng thẻ thì tiền đi lúc trả thẻ, đã nằm trong số phải trả của thẻ). Qua ngày mà chưa thấy khoản trả: vàng, không đỏ
+   — số tiền chỉ là khoảng, có thể anh trả rồi mà chưa ghi. */
+function hoaDonSap(du, homNay, den) {
+  var kq = [];
+  var dau = String(homNay).slice(0, 7) + '-01';
+  (du && Array.isArray(du.hoaDon) ? du.hoaDon : []).forEach(function (b) {
+    if (!b) return;
+    var tk = tkTheoMa(du, b.taiKhoan);
+    if (tk && (laTkNo(tk.loai) || tk.an)) return;
+    var ten = tenHoaDon(du, b);
+    (Array.isArray(b.lan) ? b.lan : []).forEach(function (l) {
+      if (!l || l.daTra || String(l.han) < dau || String(l.han) > den) return;
+      var quaNgay = String(l.han) < homNay;
+      kq.push({ ma: 'hd:' + b.ma + ':' + String(l.han).slice(0, 7), kieu: 'hd', maHd: b.ma, taiKhoan: b.taiKhoan, tenTk: ten,
+        han: l.han, soTien: Number(b.soTien) || 0, goc: Number(b.soTien) || 0, noiDung: ten, hangMuc: b.hangMuc, ky: '',
+        daTra: false, quaNgay: quaNgay, uocTinh: true,
+        trangThai: quaNgay || soNgayGiua(homNay, l.han) <= 3 ? 'sap' : '' });
+    });
+  });
+  return kq;
+}
+
+/* So tiền ra tháng đang xem với tháng trước (cùng tính tới ngày này nếu đang ở tháng này). null nếu sổ chưa ghi đủ tháng trước. */
+function soSanhThangTruoc(du, chiNay) {
+  var s = du && du.soSanh;
+  if (!s || !s.co) return null;
+  var truoc = Number(s.chiTruoc) || 0;
+  return { chenh: (Number(chiNay) || 0) - truoc, truoc: truoc, toiNgay: Number(s.toiNgay) || 0, kyTruoc: String(s.kyTruoc || '') };
 }
 
 /* Chia nợ: trả theo hạn (thẻ, trả sau, khoản vay) · người thân / người quen (chưa gấp) */
@@ -1374,7 +1469,7 @@ function dungSoDu(du) {
     '<div class="hai-cot">' +
     '<div><span class="nhan-nho">⬇️ Tiền vào tháng</span><strong class="vao">+' + dinhDangTien(t.thu) + '</strong></div>' +
     '<div><span class="nhan-nho">⬆️ Tiền ra tháng</span><strong class="ra">−' + dinhDangTien(t.chi) + '</strong></div>' +
-    '</div>';
+    '</div>' + dungSoSanh(du, t.chi - khoanMotLan(du.khoan).tien);
   var tienCV = 0, coCV = false;
   for (var c0 = 0; c0 < tk.length; c0++) if (tk[c0] && tk[c0].congViec && !tk[c0].an) { coCV = true; tienCV += Number(tk[c0].soDu) || 0; }
   if (coCV) h += '<div class="phu">💼 Tiền việc công ty (không tính vào tiền của anh): ' + dinhDangTien(tienCV) + '</div>';
@@ -1470,13 +1565,14 @@ function dungBangNo(du) {
   var p = phaiTraSap(du, 30);
   var tk = Array.isArray(du.taiKhoan) ? du.taiKhoan : [];
   var h = '<div class="the bang-no"><h2>💳 Bảng nợ</h2>';
-  if (!n.tong && !p.muc.length) {
+  if (!n.tong && !p.muc.some(function (m) { return m.kieu !== 'hd'; })) { /* mốc 4: khoản tháng nào cũng trả không phải nợ */
     h += '<p class="goi-y">👍 Anh không đang nợ ai.</p>';
   } else {
     h += '<div class="nho">Anh đang nợ tất cả</div><div class="so-to">' + dinhDangTien(n.tong) + '</div>' +
       '<div class="hang-no"><span>📅 Thẻ, Shopee, khoản vay (trả theo hạn)</span><strong>' + dinhDangTien(n.theoHan) + '</strong></div>' +
       (n.nguoiThan ? '<div class="hang-no"><span>🤝 Người thân (chưa gấp)</span><strong>' + dinhDangTien(n.nguoiThan) + '</strong></div>' : '') +
-      '<div class="tien-that">Trả hết nợ thì anh còn: <strong>' + dinhDangTien(tienThat(tk)) + '</strong></div>';
+      '<div class="tien-that">Trả hết nợ thì anh còn: <strong>' + dinhDangTien(tienThat(tk)) + '</strong></div>' +
+      dungQuaThang(du); /* mốc 4 */
   }
   h += '</div><div class="the phai-tra"><h2>' + thoatHtml('📅 Sắp phải trả · 30 ngày tới: ' + dinhDangTien(p.tong)) + '</h2>';
   if (!p.muc.length) h += '<p class="goi-y">30 ngày tới không có khoản nào phải trả. 👍</p>';
@@ -1637,6 +1733,7 @@ function dungDongKhoan(du, k) {
     phu.push(thoatHtml(tenTaiKhoan(du, k.taiKhoan)));
   }
   if (gio) phu.push(thoatHtml(gio));
+  if (k.motLan) phu.unshift('⭐ Một lần'); /* mốc 4: không tính vào ngân sách */
   var nhanCho = String(k.trangThai || '').trim() === 'cho' ? '<span class="nhan-cho">⏳ Chờ xác nhận</span>' : '';
   if (k.dangGui) nhanCho = '<span class="nhan-gui">⏳ Đang lưu…</span>';
   return '<button class="khoan' + (k.dangGui ? ' dang-gui' : '') + '" data-ma="' + thoatHtml(k.ma) + '" data-hd="sua-khoan" type="button">' +
@@ -1666,13 +1763,22 @@ function dungDanhSach(du, locNhom, loc) {
   if (!ds.length) return h + '<p class="rong">' + (dangLoc ? CHU_KHONG_KHOP : 'Chưa có khoản nào trong tháng này.') + '</p></div>';
   var homQua = du.homNay ? ngayTruoc(du.homNay) : '';
   var ngayCu = null;
+  var theoNgay = {}; /* mốc 4 (như maybe): mỗi ngày bao nhiêu khoản, tiêu bao nhiêu */
+  for (var t = 0; t < ds.length; t++) {
+    var nt = String(ds[t].ngayGio || '').slice(0, 10);
+    var x = theoNgay[nt] || (theoNgay[nt] = { so: 0, chi: 0 });
+    x.so++;
+    if (ds[t].loai === 'chi') x.chi += Number(ds[t].soTien) || 0;
+  }
   for (var j = 0; j < ds.length; j++) {
     var ngay = String(ds[j].ngayGio || '').slice(0, 10);
     if (ngay !== ngayCu) {
       ngayCu = ngay;
       var dm = ngay.slice(8, 10) + '/' + ngay.slice(5, 7);
       var tieu = (du.homNay && ngay === du.homNay) ? 'Hôm nay · ' + dm : (homQua && ngay === homQua) ? 'Hôm qua · ' + dm : dm;
-      h += '<h3 class="ngay">' + thoatHtml(tieu) + '</h3>';
+      var tn = theoNgay[ngay];
+      h += '<h3 class="ngay">' + thoatHtml(tieu) + '<span class="ngay-tong">' +
+        thoatHtml(' · ' + tn.so + ' khoản' + (tn.chi ? ' · tiêu ' + dinhDangTien(tn.chi) : '')) + '</span></h3>';
     }
     h += dungDongKhoan(du, ds[j]);
   }
@@ -1734,10 +1840,12 @@ function dungDongCho(du, d) {
   var ngay = thoatHtml(ngayGioNgan(d.ngayGio));
   if (d.k) {
     var k = d.k;
+    var gy = goiYGhepCua(du, k.ma); /* mốc 4 */
+    var xep = !gy && laXepSan(du, k) ? '<span class="nhan-xep">' + thoatHtml(chuXepSan(du, k)) + '</span>' : '';
     return '<button class="dong-cho" type="button" data-hd="cho-khoan" data-ma="' + thoatHtml(k.ma) + '">' +
-      '<span class="trai"><span class="cho-ngay">' + ngay + '</span><span class="cho-ghi">' + thoatHtml(catChu(k.ghiChu || '(không có ghi chú)', 60)) + '</span>' +
-      (String(k.taiKhoan || '') === '' ? '<span class="nhan-cho">Chưa rõ tài khoản</span>' : '') + '</span>' +
-      '<span class="cho-so">' + thoatHtml(moTaKhoan(du, k).so) + '</span></button>';
+      '<span class="trai"><span class="cho-ngay">' + ngay + '</span><span class="cho-ghi">' + thoatHtml(catChu(boCanhCu(k.ghiChu) || '(không có ghi chú)', 60)) + '</span>' +
+      (String(k.taiKhoan || '') === '' ? '<span class="nhan-cho">Chưa rõ tài khoản</span>' : '') + xep + '</span>' +
+      '<span class="cho-so">' + thoatHtml(moTaKhoan(du, k).so) + '</span></button>' + dungGoiYGhep(du, gy);
   }
   var t = d.t;
   var goc = tienGocThu(t);
@@ -1778,8 +1886,11 @@ function dungCanXacNhan(du, moHet) {
   if (CHON_CHO) return dungChonCho(du, ds) + '';
   var het = moHet === undefined ? MO_CHO : !!moHet;
   var hien = het ? ds : ds.slice(0, TOI_DA_DONG_CHO);
+  var xs = dsXepSan(du); /* mốc 4: khoản em đã xếp sẵn đủ → lưu hết một chạm */
   var h = '<div class="the can-xn"><h2>' + thoatHtml('🔔 Cần xác nhận (' + ds.length + ')') + '</h2>' +
     '<p class="goi-y">👉 Em tự ghi từ thư ngân hàng. Chạm từng khoản để kiểm rồi bấm Lưu.' + (ds.length >= 2 ? ' Nhiều khoản thì bấm "☑️ Chọn nhiều".' : '') + '</p>' +
+    (xs.length ? '<div class="xep-san-khoi"><p class="goi-y">' + thoatHtml('🏷️ Em đã xếp sẵn ' + xs.length + ' khoản theo cách anh hay chọn. Đúng hết thì bấm nút dưới; sai khoản nào thì chạm khoản đó để sửa trước.') +
+      '</p><button class="nut-chinh" type="button" data-hd="xep-san-luu">' + thoatHtml('✅ Đúng hết — lưu ' + xs.length + ' khoản đã xếp sẵn') + '</button></div>' : '') +
     (ds.length >= 2 ? '<button class="nut nut-het" type="button" data-hd="cho-chon">☑️ Chọn nhiều để xác nhận / bỏ một lần</button>' : '');
   for (var i = 0; i < hien.length; i++) h += dungDongCho(du, hien[i]);
   if (hien.length < ds.length) h += '<button class="nut nut-het" type="button" data-hd="cho-het">Xem tất cả (' + ds.length + ')</button>';
@@ -1811,6 +1922,8 @@ function dungTinhTrangThu(du) {
   var h = '<p class="tinh-trang-thu' + (cu ? ' vang' : '') + '">' + thoatHtml(chu) + '</p>';
   /* chưa có hẹn giờ đọc thư mỗi giờ: anh chưa chạy menu Cài đặt trong Sheet */
   if (du.henGioThu === false) h += '<p class="tinh-trang-thu vang">' + thoatHtml('⚠️ App chưa tự đọc thư mỗi giờ. Mở Google Sheet sổ chi tiêu → menu 💰 Sổ chi tiêu → ⚙ Cài đặt / sửa tab, bấm Cho phép (chỉ một lần).') + '</p>';
+  var soQt = Array.isArray(du.quyTac) ? du.quyTac.length : 0; /* mốc 4 */
+  if (soQt) h += '<button class="nut-nho nut-het" type="button" data-hd="qt-mo">' + thoatHtml('🏷️ Em đang tự xếp ' + soQt + ' loại khoản — xem / bỏ') + '</button>';
   return h;
 }
 
@@ -1933,6 +2046,7 @@ function veLai() {
     gan('so-du', TT.loi ? dungKhungLoi(TT.loi, true) : dungDangMo());
     gan('phai-tra', '');
     gan('bang-no', '');
+    gan('hoa-don', '');
     gan('tinh-hinh-no', '');
     gan('sap-thu', '');
     gan('ngan-sach', '');
@@ -1950,6 +2064,7 @@ function veLai() {
   gan('so-du', dungSoDu(du));
   gan('phai-tra', ''); /* 20/11: thay bằng "Sắp phải trả · 30 ngày tới" trong trang Bảng nợ */
   gan('bang-no', dungBangNo(du));
+  gan('hoa-don', dungHoaDonThang(du)); /* mốc 4 */
   gan('tinh-hinh-no', dungTinhHinhNo(du));
   gan('sap-thu', dungSapThu(du));
   gan('ngan-sach', dungNganSach(du));
@@ -2010,7 +2125,7 @@ function ghiTkTruoc(loai, ma) {
 }
 
 function dauVet(n) {
-  return [n.loai, n.chuSoTien, n.hangMuc, n.taiKhoan, n.taiKhoanDen, n.ngay, n.gio, n.ghiChu].join('|');
+  return [n.loai, n.chuSoTien, n.hangMuc, n.taiKhoan, n.taiKhoanDen, n.ngay, n.gio, n.ghiChu].join('|') + (n.motLan ? '|ml' : '');
 }
 
 function nhapMoi(du, homNay, bayGio) {
@@ -2035,7 +2150,13 @@ function nhapTuKhoan(du, k) {
     ngay: ng.slice(0, 10), gio: ng.slice(11, 16), ghiChu: String(k.ghiChu || ''),
     dangLuu: false, loiLuu: '', chonHm: { mo: false, chu: '', nhomMo: '' }
   };
-  if (String(k.trangThai || '').trim() === 'cho') n.tuThu = true; /* vé 12 */
+  if (String(k.trangThai || '').trim() === 'cho') { /* vé 12 */
+    n.tuThu = true;
+    n.ghiChu = boCanhCu(n.ghiChu); /* mốc 4: bỏ câu "⚠️ Có thể là trả thẻ" cũ — giờ hỏi thẳng bằng nút */
+    n.xepSan = laXepSan(du, k);
+  }
+  n.motLan = !!k.motLan; /* mốc 4 */
+  n.motLanDau = n.motLan;
   n.dau = dauVet(n);
   return n;
 }
@@ -2085,6 +2206,8 @@ function kiemNhap(du, nhap) {
     }
   };
   if (chia) kq.k.chiaKy = chia;
+  /* mốc 4: chỉ gửi khi có đánh dấu / vừa bỏ đánh dấu — khỏi bắt máy chủ đọc thêm mỗi lần lưu */
+  if (nhap.motLan || nhap.motLanDau) kq.k.motLan = !!nhap.motLan && loai === 'chi';
   return kq;
 }
 
@@ -2319,7 +2442,8 @@ function dungHopKhoan(du, nhap) {
   if (nhap.chonHm && nhap.chonHm.mo && !chuyen) return dungKhungTim(du, nhap);
   var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="' + (nhap.sua ? 'Sửa khoản' : 'Ghi khoản') + '">' +
     '<div class="hop-dau"><h2>' + (nhap.sua ? '✏️ Sửa khoản' : '＋ Ghi khoản') + '</h2><button class="nut" type="button" data-hd="dong">✕ Đóng</button></div>' +
-    (nhap.tuThu ? '<p class="khung vang bao-thu">📩 Tự ghi từ thư ngân hàng — kiểm lại rồi bấm Lưu để xác nhận.</p>' : '') +
+    (nhap.tuThu ? '<p class="khung vang bao-thu">' + (nhap.xepSan ? '📩 Tự ghi từ thư ngân hàng, em đã xếp sẵn theo cách anh hay chọn — kiểm lại rồi bấm Lưu.' : '📩 Tự ghi từ thư ngân hàng — kiểm lại rồi bấm Lưu để xác nhận.') + '</p>' +
+      dungGoiYGhep(du, goiYGhepCua(du, nhap.ma)) : '') + /* mốc 4 */
     dungBaoLanTra(du, nhap) + dungBaoKhoanTra(du, nhap) +
     '<p class="goi-y">' + (chuyen ? '👉 Gõ số tiền, chọn tiền đi từ đâu sang đâu rồi bấm Lưu.' : '👉 Gõ số tiền, chọn hạng mục rồi bấm Lưu.') + '</p>' +
     dungChonLoai(nhap) +
@@ -2333,6 +2457,7 @@ function dungHopKhoan(du, nhap) {
   h += dungNgayGio(du, nhap);
   h += '<div class="nhom-nhap"><label class="nhan-hang" for="o-ghichu">Ghi chú (không bắt buộc)</label>' +
     '<input id="o-ghichu" class="o" type="text" autocomplete="off" placeholder="Ví dụ: ăn trưa với Minh" value="' + thoatHtml(nhap.ghiChu) + '"></div>';
+  if (nhap.loai === 'chi') h += dungNutMotLan(nhap); /* mốc 4 */
   return h + dungChanHop(du, nhap) + '</div>';
 }
 
@@ -2493,6 +2618,7 @@ function luuKhoan() {
     ghiTkTruoc(k.loai, k.taiKhoan);
     if (NHAP === nhap) dongHop();
     var ten = k.loai === 'chuyen' ? 'Chuyển tiền' : tenHangMuc(kq, k.hangMuc).mucCon;
+    if (baoHoc(kq, 'Đã lưu.')) return; /* mốc 4: em vừa học được cách xếp */
     baoNhanh('Đã lưu ' + dinhDangTien(k.soTien) + ' · ' + ten + (k.chiaKy ? ' · chia ' + k.chiaKy.soKy + ' kỳ' : '') + (kyKhoan !== kq.ky ? ' (khoản này nằm ở ' + tenKy(kyKhoan) + ')' : ''));
   }, function (cau) {
     luuHong(nhap, cau);
@@ -2572,6 +2698,7 @@ function vaKhoanTam(du, k) {
   var moi = chepDoiTuong(du);
   var tam = { ma: k.ma, ngayGio: k.ngayGio, loai: k.loai, soTien: k.soTien, taiKhoan: k.taiKhoan, taiKhoanDen: k.taiKhoanDen || '',
     hangMuc: k.hangMuc || '', ghiChu: k.ghiChu || '', nguon: 'tay', trangThai: 'xac_nhan', dangGui: true };
+  if (k.motLan) tam.motLan = true; /* mốc 4 */
   if (String(k.ngayGio).slice(0, 7) === du.ky) {
     moi.khoan = [tam].concat(Array.isArray(du.khoan) ? du.khoan : []).sort(function (a, b) {
       return a.ngayGio < b.ngayGio ? 1 : a.ngayGio > b.ngayGio ? -1 : 0;
@@ -2721,6 +2848,7 @@ function xuLyBamGhi(hd, el) {
     capNhatXemTien();
   }
   else if (hd === 'luu') luuKhoan();
+  else if (hd === 'mot-lan') { nhap.motLan = !nhap.motLan; veHop(); } /* mốc 4 */
   else if (hd === 'doi-ngay') { nhap.doiNgay = true; veHop(); }
   else if (hd === 'xoa-hoi') { nhap.hoiXoa = true; nhap.loiLuu = ''; veHop(); }
   else if (hd === 'xoa-thoi') { nhap.hoiXoa = false; nhap.loiLuu = ''; veHop(); }
@@ -3279,7 +3407,7 @@ var NHAP_NS = null;   /* hộp ngân sách đang mở: { chu: {<nhom>: chữ gõ
 var KY_RE = /^[0-9]{4}-(0[1-9]|1[0-2])$/;
 var CHU_KHONG_KHOP = 'Không có khoản nào khớp. Bấm "✕ Bỏ hết lọc" để xem lại tất cả.';
 var CHU_SO_AM_NS = 'Gõ số dương, ví dụ 3tr.';
-var HD_BC = ['ns-mo', 'ns-luu', 'ns-dong', 'chon-ngay', 'bo-ngay', 'chon-thang', 'loc-tk', 'bo-het-loc'];
+var HD_BC = ['ns-dung', 'ns-mo', 'ns-luu', 'ns-dong', 'chon-ngay', 'bo-ngay', 'chon-thang', 'loc-tk', 'bo-het-loc'];
 
 function p2(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -3401,7 +3529,8 @@ function dungNganSach(du) {
       '<div class="ns-thanh" aria-hidden="true"><span style="width:' + rong + '%"></span></div>' +
       '<div class="ns-tt">' + thoatHtml(tt) + '</div></li>';
   }
-  return h + '</ul></div>';
+  var ml = khoanMotLan(du.khoan); /* mốc 4 */
+  return h + '</ul>' + (ml.so ? '<p class="goi-y">' + thoatHtml('⭐ Không tính ' + ml.so + ' khoản một lần (' + dinhDangTien(ml.tien) + ') vào ngân sách.') + '</p>' : '') + '</div>';
 }
 
 function dungHopNganSach(du, nhapNs) {
@@ -3412,12 +3541,14 @@ function dungHopNganSach(du, nhapNs) {
   var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Ngân sách mỗi tháng">' +
     '<div class="hop-dau"><h2>🎯 Ngân sách mỗi tháng</h2><button class="nut" type="button" data-hd="ns-dong">✕ Đóng</button></div>' +
     '<p class="goi-y">👉 Gõ số tiền tối đa muốn tiêu mỗi tháng cho từng nhóm. Để trống = không đặt.</p>';
+  var gy = du && du.goiYNganSach && typeof du.goiYNganSach === 'object' ? du.goiYNganSach : null; /* mốc 4 */
+  if (gy && !(gy.soThang > 0)) h += '<p class="goi-y">💡 Ghi sổ đủ một tháng thì em gợi ý số cho từng nhóm theo số anh tiêu thật.</p>';
   for (var i = 0; i < dong.length; i++) {
     var n = dong[i].nhom;
     var gt = chu[n] === undefined || chu[n] === null ? '' : chu[n];
     h += '<div class="nhom-nhap ns-o"><div class="ns-hang"><label class="ns-nhan" for="o-ns-' + i + '">' + thoatHtml(tenDongNs(dong[i])) + '</label>' +
       '<input id="o-ns-' + i + '" class="o o-ns" type="text" inputmode="decimal" autocomplete="off" placeholder="Không đặt" data-nhom="' + thoatHtml(n) +
-      '" data-i="' + i + '" value="' + thoatHtml(gt) + '"></div>' +
+      '" data-i="' + i + '" value="' + thoatHtml(gt) + '"></div>' + dungGoiYNs(gy, n) +
       '<div id="loi-ns-' + i + '">' + (loi[n] ? '<p class="loi" role="alert">' + thoatHtml(loi[n]) + '</p>' : '') + '</div></div>';
   }
   h += '<div class="chan-hop">';
@@ -3639,6 +3770,14 @@ function luuNganSach() {
 }
 
 function xuLyBamBc(hd, el) {
+  if (hd === 'ns-dung') { /* mốc 4: dùng số gợi ý */
+    if (!NHAP_NS) return;
+    var nhomNs = el.getAttribute('data-nhom') || '';
+    NHAP_NS.chu[nhomNs] = soKhongDong(Number(el.getAttribute('data-so')) || 0);
+    if (NHAP_NS.loi) delete NHAP_NS.loi[nhomNs];
+    veHopNs();
+    return;
+  }
   if (hd === 'ns-mo') moHopNganSach();
   else if (hd === 'ns-luu') luuNganSach();
   else if (hd === 'ns-dong') { if (NHAP_NS) dongHopNs(); }
@@ -3726,6 +3865,7 @@ function tenKhoanTra(m) {
 
 /* Một dòng phải trả: chữ ở trên, nút to ở dưới ("✅ Đã trả xong"; thẻ có thêm "🔁 Đáo thẻ") */
 function dungDongTra(du, m) {
+  if (m.kieu === 'hd') return dungDongHoaDonSap(du, m); /* mốc 4: khoản tháng nào cũng trả */
   var homNay = String(du.homNay || '');
   var h = '<div class="dong-tra ' + (m.daoHan ? 'dao_han' : m.daTra ? 'da_tra' : m.trangThai) + '">' +
     '<div class="tra-dong1"><span class="trai"><span class="cho-ngay">' + thoatHtml('Hạn ' + chuNgayDayDu(m.han).slice(0, 5) + ' · ' + m.tenTk) + '</span>' +
@@ -4074,7 +4214,7 @@ function luuXacNhanNhieu() {
     CHON_CHO = null;
     nhanDuLieuMoi(kq);
     if (NHAP_XN === nhap) dongHopNo();
-    baoNhanh('Đã xác nhận ' + nhap.dsMa.length + ' khoản.');
+    if (!baoHoc(kq, 'Đã xác nhận ' + nhap.dsMa.length + ' khoản.')) baoNhanh('Đã xác nhận ' + nhap.dsMa.length + ' khoản.');
   }, function (cau) { hongNo(nhap, cau); });
 }
 
@@ -4673,7 +4813,7 @@ function dongHopNo() {
 }
 
 function dangMoHopKhac() {
-  return !!(NHAP || NHAP_TK || NHAP_NS || NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK || NHAP_XN);
+  return !!(NHAP || NHAP_TK || NHAP_NS || NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK || NHAP_XN || NHAP_HD || NHAP_QT);
 }
 
 function moHopTra(ma) {
@@ -5265,6 +5405,472 @@ function xuLyNhapNo(e) {
   }
 }
 
+/* ============================================================
+   MỐC 4 — học từ maybe-finance (20/11): ghép khoản trùng / trả thẻ · em xếp sẵn (quy tắc) · khoản một lần ·
+   khoản tháng nào cũng phải trả · gợi ý ngân sách · so với tháng trước · "trả hết nợ thì anh còn" qua các tháng.
+   Hàm dựng chữ là hàm thuần; chỉ veHopHoc / moHop… chạm document.
+   ============================================================ */
+
+var NHAP_QT = null;   /* hộp "Cách em tự xếp": {} khi mở */
+var NHAP_HD = null;   /* hộp khoản tháng nào cũng trả: { ma, hangMuc, chuSoTien, ngay, taiKhoan, ghiChu, dangLuu, loiLuu, loi } */
+var DANG_HOC = false; /* đang gửi một nút ghép / lưu xếp sẵn — chặn bấm hai lần */
+var CHU_CANH_CU = ' · ⚠️ Có thể là trả thẻ — đổi thành Chuyển nếu đúng';
+
+function boCanhCu(s) {
+  var c = String(s === undefined || s === null ? '' : s);
+  var i = c.indexOf(CHU_CANH_CU);
+  return i >= 0 ? c.slice(0, i) : c;
+}
+
+function goiYGhepCua(du, ma) {
+  var ds = du && Array.isArray(du.goiYGhep) ? du.goiYGhep : [];
+  for (var i = 0; i < ds.length; i++) if (ds[i] && ds[i].ma === ma) return ds[i];
+  return null;
+}
+
+/* Khoản thư em đã xếp sẵn đủ: có tài khoản + hạng mục chi, hoặc là chuyển đủ hai đầu */
+function laXepSan(du, k) {
+  if (!k || String(k.trangThai || '').trim() !== 'cho' || !k.taiKhoan || !timTk(du, k.taiKhoan)) return false;
+  if (k.loai === 'chi') { var hm = timHm(du, k.hangMuc); return !!hm && hm.kieu === 'chi'; }
+  return k.loai === 'chuyen' && !!k.taiKhoanDen && k.taiKhoanDen !== k.taiKhoan && !!timTk(du, k.taiKhoanDen);
+}
+
+/* Khoản xếp sẵn mà không có câu hỏi ghép nào đang chờ — lưu hết được một chạm */
+function dsXepSan(du) {
+  var cho = du && Array.isArray(du.choXacNhan) ? du.choXacNhan : [];
+  return cho.filter(function (k) { return laXepSan(du, k) && !goiYGhepCua(du, k.ma); });
+}
+
+function tenDich(du, dich) {
+  if (/^HM/.test(String(dich))) { var hm = tenHangMuc(du, dich); return (hm.bieuTuong ? hm.bieuTuong + ' ' : '') + hm.mucCon; }
+  return '🔁 chuyển sang ' + tenTaiKhoan(du, dich);
+}
+
+function chuXepSan(du, k) {
+  return '🏷️ Em xếp sẵn: ' + (k.loai === 'chi' ? tenDich(du, k.hangMuc) : tenDich(du, k.taiKhoanDen));
+}
+
+/* Khung hỏi "có phải một không" / "có phải trả thẻ không", hai nút to */
+function dungGoiYGhep(du, gy) {
+  if (!gy) return '';
+  var cau, phu, nut, voi, khoa;
+  if (gy.kieu === 'trung') {
+    var v = gy.voiKhoan || {};
+    var ten = v.ghiChu ? String(v.ghiChu) : moTaKhoan(du, v).ten;
+    cau = '🔗 Có vẻ trùng khoản anh đã ghi: ' + catChu(ten, 40) + ' ' + dinhDangTien(Number(v.soTien) || 0) + ' · ' + ngayGioNgan(v.ngayGio) +
+      ' (' + tenTaiKhoan(du, v.taiKhoan) + ')';
+    phu = 'Bấm Đúng thì em bỏ dòng thư này, khoản anh đã ghi giữ nguyên — tiền không bị trừ hai lần.';
+    nut = '✅ Đúng, là một khoản';
+    voi = gy.voi;
+    khoa = gy.voi;
+  } else if (gy.kieu === 'tra_the') {
+    cau = '💳 Có vẻ là anh trả thẻ ' + tenTaiKhoan(du, gy.the) +
+      (gy.coThu ? ' — thư của thẻ báo đã nhận tiền lúc ' + ngayGioNgan(gy.thuNgay) : ' (nội dung có tên ngân hàng của thẻ)');
+    phu = 'Bấm Đúng thì khoản này thành tiền chuyển sang thẻ: không tính là đã tiêu, nợ thẻ giảm.';
+    nut = '✅ Đúng, là trả thẻ';
+    voi = gy.the;
+    khoa = 'the:' + gy.the;
+  } else {
+    return '';
+  }
+  return '<div class="ghep" role="group" aria-label="Câu hỏi của em"><p class="ghep-cau">' + thoatHtml(cau) + '</p>' +
+    '<p class="ghep-phu">' + thoatHtml(phu) + '</p><div class="tra-nut">' +
+    '<button class="nut-chinh" type="button" data-hd="ghep-dung" data-ma="' + thoatHtml(gy.ma) + '" data-kieu="' + thoatHtml(gy.kieu) +
+    '" data-voi="' + thoatHtml(voi) + '">' + thoatHtml(nut) + '</button>' +
+    '<button class="nut" type="button" data-hd="ghep-khong" data-ma="' + thoatHtml(gy.ma) + '" data-khoa="' + thoatHtml(khoa) + '">Không phải</button></div></div>';
+}
+
+function dungNutMotLan(nhap) {
+  var bat = !!nhap.motLan;
+  return '<div class="nhom-nhap"><button class="dong-an nut-mot-lan' + (bat ? ' chon' : '') + '" type="button" data-hd="mot-lan" aria-pressed="' + (bat ? 'true' : 'false') + '">' +
+    '<span class="o-danh" aria-hidden="true">' + (bat ? '☑' : '☐') + '</span><span>⭐ Khoản lớn một lần (mua điện thoại, viện phí…)' +
+    '<span class="nhan-nho">Vẫn tính là đã tiêu, nhưng không tính vào ngân sách tháng và số em gợi ý.</span></span></button></div>';
+}
+
+/* "📉 Tiêu ít hơn tháng trước …" — chữ + mũi tên, không chỉ dựa vào màu */
+function dungSoSanh(du, chiNay) {
+  var s = soSanhThangTruoc(du, chiNay);
+  if (!s) return '';
+  var dangThang = du && String(du.homNay || '').slice(0, 7) === du.ky;
+  var ten = dangThang ? 'tháng trước' : tenKy(s.kyTruoc).toLowerCase();
+  var ml = khoanMotLan(du && du.khoan);
+  var toi = (s.toiNgay ? ' (cùng tính tới ngày ' + s.toiNgay + ')' : '') + (ml.so ? ' · không tính ' + ml.so + ' khoản một lần' : '');
+  var chu = s.chenh < 0 ? '📉 Tiêu ít hơn ' + ten + ' ' + dinhDangTien(-s.chenh) + toi
+    : s.chenh > 0 ? '📈 Tiêu nhiều hơn ' + ten + ' ' + dinhDangTien(s.chenh) + toi
+    : '➖ Tiêu bằng ' + ten + toi;
+  return '<div class="so-sanh">' + thoatHtml(chu) + '</div>';
+}
+
+/* Hộp ngân sách: "3 tháng qua khoảng … ₫/tháng · [Dùng số này]" */
+function dungGoiYNs(gy, nhom) {
+  if (!gy || !(gy.soThang > 0)) return '';
+  var so = nhom === 'TỔNG' ? Number(gy.tong) || 0 : Number(gy.nhom && gy.nhom[nhom]) || 0;
+  if (!(so > 0)) return '';
+  return '<div class="ns-goi-y"><span>' + thoatHtml('💡 ' + (gy.soThang > 1 ? gy.soThang + ' tháng qua' : 'Tháng trước') + ' anh tiêu khoảng ' + dinhDangTien(so) + '/tháng') + '</span>' +
+    '<button class="nut-nho" type="button" data-hd="ns-dung" data-nhom="' + thoatHtml(nhom) + '" data-so="' + so + '">Dùng số này</button></div>';
+}
+
+/* Bảng nợ: "Trả hết nợ thì anh còn" qua các tháng, mỗi mốc so với mốc trước (▲ khá hơn / ▼ kém hơn) */
+function dungQuaThang(du) {
+  var ds = du && Array.isArray(du.tienThatThang) ? du.tienThatThang.slice(-4) : []; /* 4 mốc gần nhất: đủ thấy xu hướng, không dài */
+  if (ds.length < 2) return '';
+  var h = '<div class="qua-thang"><div class="nho">📈 Qua các tháng (trả hết nợ thì anh còn)</div><ul>';
+  for (var i = 0; i < ds.length; i++) {
+    var x = ds[i];
+    var ng = String(x.ngay);
+    var laCuoi = Number(ng.slice(8, 10)) === cuoiThang(Number(ng.slice(0, 4)), Number(ng.slice(5, 7)));
+    /* máy chủ chỉ gửi 7 mốc gần nhất: mốc đầu có thể là cuối một tháng, không phải ngày bắt đầu sổ */
+    var ten = ng === du.homNay ? 'Hôm nay' : laCuoi ? 'Cuối ' + tenKy(ng.slice(0, 7)).toLowerCase() : 'Lúc bắt đầu ghi sổ (' + chuNgayNgan(ng) + ')';
+    var doi = '', lop = '';
+    if (i > 0) {
+      var c = (Number(x.tien) || 0) - (Number(ds[i - 1].tien) || 0);
+      doi = c > 0 ? '▲ khá hơn ' + dinhDangTien(c) : c < 0 ? '▼ kém hơn ' + dinhDangTien(-c) : '= như mốc trước';
+      lop = c > 0 ? ' tang' : c < 0 ? ' giam' : '';
+    }
+    h += '<li><span>' + thoatHtml(ten) + '</span><strong>' + thoatHtml(dinhDangTien(x.tien)) + '</strong>' +
+      (doi ? '<span class="doi' + lop + '">' + thoatHtml(doi) + '</span>' : '') + '</li>';
+  }
+  return h + '</ul></div>';
+}
+
+/* Một lần sắp tới của khoản tháng nào cũng trả, trong "📅 Sắp phải trả" */
+function dungDongHoaDonSap(du, m) {
+  var homNay = String(du.homNay || '');
+  var con = soNgayGiua(homNay, m.han);
+  var nhan = m.quaNgay ? '⏰ Đã qua ngày trả — trả rồi thì bấm ✅ để ghi'
+    : '🗓️ Tháng nào cũng có · ' + (con === 0 ? 'hôm nay' : 'còn ' + con + ' ngày');
+  return '<div class="dong-tra sap"><div class="tra-dong1"><span class="trai"><span class="cho-ngay">' + thoatHtml('Ngày ' + chuNgayNgan(m.han) + ' · ' + m.tenTk) + '</span>' +
+    '<span class="cho-ghi">' + thoatHtml('Trả bằng ' + tenTaiKhoan(du, m.taiKhoan)) + '</span>' +
+    '<span class="nhan-tra sap">' + thoatHtml(nhan) + '</span></span>' +
+    '<span class="cho-so">khoảng ' + thoatHtml(dinhDangTien(m.soTien)) + '</span></div>' +
+    '<div class="tra-nut"><button class="nut-chinh" type="button" data-hd="hd-tra" data-ma="' + thoatHtml(m.maHd) + '">✅ Đã trả — ghi khoản này</button></div></div>';
+}
+
+/* Trang Bảng nợ: thẻ "🗓️ Tháng nào cũng phải trả" — gợi ý em thấy · danh sách · nút thêm */
+function dungHoaDonThang(du) {
+  if (!du || typeof du !== 'object' || !du.ky) return '';
+  var ds = Array.isArray(du.hoaDon) ? du.hoaDon : [];
+  var gy = Array.isArray(du.goiYHoaDon) ? du.goiYHoaDon : [];
+  var h = '<div class="the hoa-don"><h2>🗓️ Tháng nào cũng phải trả</h2>';
+  if (!ds.length) h += '<p class="goi-y">Điện, nước, mạng, thuê nhà, gói ứng dụng… Thêm vào đây thì "Còn lại để tiêu" tự trừ trước và em nhắc khi tới ngày.</p>';
+  for (var i = 0; i < gy.length; i++) h += dungGoiYHoaDon(du, gy[i]);
+  for (var j = 0; j < ds.length; j++) h += dungDongHd(du, ds[j]);
+  return h + '<button class="nut nut-het" type="button" data-hd="hd-mo">＋ Thêm khoản tháng nào cũng phải trả</button></div>';
+}
+
+function dungDongHd(du, b) {
+  var hm = tenHangMuc(du, b.hangMuc);
+  var lan = Array.isArray(b.lan) && b.lan[0] ? b.lan[0] : {};
+  var tk = tkTheoMa(du, b.taiKhoan);
+  var tt = lan.daTra ? '✅ Tháng này đã trả ' + dinhDangTien(lan.soTra)
+    : '⏳ Tháng này chưa thấy khoản trả' + (lan.han && String(lan.han) < String(du.homNay || '') ? ' (đã qua ngày ' + b.ngay + ')' : '');
+  return '<div class="dong-hd"><div class="tk-d1"><span>' + thoatHtml((hm.bieuTuong ? hm.bieuTuong + ' ' : '') + tenHoaDon(du, b)) + '</span>' +
+    '<strong>' + thoatHtml('khoảng ' + dinhDangTien(b.soTien)) + '</strong></div>' +
+    '<div class="phu">' + thoatHtml('Ngày ' + b.ngay + ' hằng tháng · trả bằng ' + tenTaiKhoan(du, b.taiKhoan) +
+      (tk && laTkNo(tk.loai) ? ' (tiền đi lúc trả thẻ)' : '')) + '</div>' +
+    '<div class="phu">' + thoatHtml(tt) + '</div>' +
+    '<button class="nut-nho" type="button" data-hd="hd-mo" data-ma="' + thoatHtml(b.ma) + '">✏️ Sửa / bỏ</button></div>';
+}
+
+function dungGoiYHoaDon(du, g) {
+  var hm = tenHangMuc(du, g.hangMuc);
+  return '<div class="ghep"><p class="ghep-cau">' + thoatHtml('🔎 Em thấy ' + g.soThang + ' tháng liền anh đều trả ' + (hm.bieuTuong ? hm.bieuTuong + ' ' : '') + hm.mucCon +
+    ' khoảng ' + dinhDangTien(g.soTien) + ', quanh ngày ' + g.ngay + '. Tháng nào cũng có khoản này?') + '</p>' +
+    '<div class="tra-nut"><button class="nut-chinh" type="button" data-hd="hd-goi-y" data-hm="' + thoatHtml(g.hangMuc) + '">✅ Đúng, nhắc em mỗi tháng</button>' +
+    '<button class="nut" type="button" data-hd="hd-goi-y-bo" data-hm="' + thoatHtml(g.hangMuc) + '">Không phải</button></div></div>';
+}
+
+/* ---- hộp "🏷️ Cách em tự xếp" ---- */
+
+function dungHopQuyTac(du) {
+  var ds = du && Array.isArray(du.quyTac) ? du.quyTac : [];
+  var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Cách em tự xếp">' +
+    '<div class="hop-dau"><h2>🏷️ Cách em tự xếp</h2><button class="nut" type="button" data-hd="qt-dong">✕ Đóng</button></div>' +
+    '<p class="goi-y">Khoản từ thư ngân hàng mà anh xếp cùng một chỗ hai lần liền thì từ lần sau em xếp sẵn như vậy — anh vẫn bấm lưu. Không muốn thì bấm "Bỏ".</p>';
+  if (!ds.length) return h + '<p class="rong">Chưa có. Anh xác nhận vài khoản từ thư ngân hàng là em học dần.</p>' +
+    '<div class="chan-hop"><button class="nut" type="button" data-hd="qt-dong">Đóng</button></div></div>';
+  h += '<ul class="ds-qt">';
+  for (var i = 0; i < ds.length; i++) {
+    var q = ds[i];
+    h += '<li><div class="qt-chu">' + thoatHtml('Khoản có chữ “' + String(q.chu).toUpperCase() + '”') + '</div>' +
+      '<div class="qt-dich">' + thoatHtml('→ em xếp vào ' + tenDich(du, q.dich)) + '</div>' +
+      '<button class="nut-nho" type="button" data-hd="qt-bo" data-ma="' + thoatHtml(q.ma) + '">🗑 Bỏ cách xếp này</button></li>';
+  }
+  return h + '</ul><div class="chan-hop"><button class="nut" type="button" data-hd="qt-dong">Đóng</button></div></div>';
+}
+
+/* ---- hộp "🗓️ Khoản tháng nào cũng phải trả" ---- */
+
+function nhapHd(du, b, goiY) {
+  var hmDau = '';
+  if (!b && !goiY) {
+    var ds = du && Array.isArray(du.hangMuc) ? du.hangMuc : [];
+    for (var i = 0; i < ds.length && !hmDau; i++) if (ds[i] && ds[i].kieu === 'chi' && !ds[i].an && ds[i].nhom === 'Hoá đơn & sinh hoạt') hmDau = ds[i].ma;
+  }
+  var goc = b || goiY || {};
+  var tk = goc.taiKhoan && timTk(du, goc.taiKhoan) ? goc.taiKhoan : tkMacDinh(du, 'chi');
+  return { ma: b ? String(b.ma) : '', hangMuc: String(goc.hangMuc || hmDau), chuSoTien: goc.soTien ? soKhongDong(goc.soTien) : '',
+    ngay: goc.ngay ? String(goc.ngay) : '', taiKhoan: tk, ghiChu: b ? String(b.ghiChu || '') : '', dangLuu: false, loiLuu: '', loi: {} };
+}
+
+function phanXemHd(n) {
+  if (n.loi && n.loi.soTien) return '';
+  var r = docSoTien(n.chuSoTien);
+  return r.so ? '= ' + dinhDangTien(r.so) : '';
+}
+
+function dungHopHoaDon(du, n) {
+  var hm = (du && Array.isArray(du.hangMuc) ? du.hangMuc : []).filter(function (x) { return x && x.kieu === 'chi' && (!x.an || x.ma === n.hangMuc); });
+  var tk = dsTaiKhoanHien(du, n.taiKhoan, '').filter(function (t) { return t.loai !== 'vay' && t.loai !== 'vay_nguoi' && t.loai !== 'cho_vay'; });
+  var h = '<div class="hop" role="dialog" aria-modal="true" aria-label="Khoản tháng nào cũng phải trả">' +
+    '<div class="hop-dau"><h2>' + (n.ma ? '✏️ Sửa khoản hằng tháng' : '🗓️ Khoản tháng nào cũng phải trả') + '</h2><button class="nut" type="button" data-hd="hd-dong">✕ Đóng</button></div>' +
+    '<p class="goi-y">👉 Em tự trừ trước vào "Còn lại để tiêu" và nhắc khi tới ngày. Tháng nào anh ghi khoản chi đúng mục này là em coi như đã trả.</p>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-hd-hm">Khoản gì?</label><select id="o-hd-hm" class="o"><option value="">— Chọn —</option>';
+  var nhom = '';
+  for (var j = 0; j < hm.length; j++) {
+    if (hm[j].nhom !== nhom) { if (nhom) h += '</optgroup>'; nhom = hm[j].nhom; h += '<optgroup label="' + thoatHtml(nhom) + '">'; }
+    h += '<option value="' + thoatHtml(hm[j].ma) + '"' + (hm[j].ma === n.hangMuc ? ' selected' : '') + '>' + thoatHtml((hm[j].bieuTuong ? hm[j].bieuTuong + ' ' : '') + hm[j].mucCon) + '</option>';
+  }
+  if (nhom) h += '</optgroup>';
+  h += '</select>' + loiNo(n, 'hangMuc') + '</div>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-hd-tien">Mỗi tháng khoảng bao nhiêu?</label>' +
+    '<input id="o-hd-tien" class="o o-tien" type="text" inputmode="decimal" autocomplete="off" placeholder="Ví dụ 800k" value="' + thoatHtml(n.chuSoTien) + '">' +
+    '<div id="xem-hd-tien" class="xem-tien" aria-live="polite">' + phanXemHd(n) + '</div>' + loiNo(n, 'soTien') + '</div>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-hd-ngay">Ngày mấy hằng tháng?</label><select id="o-hd-ngay" class="o"><option value="">— Chọn ngày —</option>';
+  for (var d = 1; d <= 31; d++) h += '<option value="' + d + '"' + (String(d) === String(n.ngay) ? ' selected' : '') + '>Ngày ' + d + (d >= 29 ? ' (tháng thiếu ngày thì lấy ngày cuối tháng)' : '') + '</option>';
+  h += '</select>' + loiNo(n, 'ngay') + '</div>' +
+    '<div class="nhom-nhap"><h3 class="nhan-hang">Thường trả bằng</h3><div class="hang-tk">';
+  for (var i = 0; i < tk.length; i++) {
+    var chon = tk[i].ma === n.taiKhoan;
+    h += '<button class="chon-tk' + (chon ? ' chon' : '') + '" type="button" data-hd="hd-tk" data-ma="' + thoatHtml(tk[i].ma) +
+      '" aria-pressed="' + (chon ? 'true' : 'false') + '">' + (chon ? '✓ ' : '') + thoatHtml(tk[i].ten) + '</button>';
+  }
+  h += '</div>' + loiNo(n, 'taiKhoan') + '</div>' +
+    '<div class="nhom-nhap"><label class="nhan-hang" for="o-hd-ghi">Tên gọi (không bắt buộc)</label>' +
+    '<input id="o-hd-ghi" class="o" type="text" autocomplete="off" placeholder="Ví dụ: Điện nhà" value="' + thoatHtml(n.ghiChu) + '"></div>' +
+    '<div class="chan-hop">' + (n.loiLuu ? '<div class="khung do" id="loi-luu" role="alert">' + thoatHtml(n.loiLuu) + '</div>' : '') +
+    '<button class="nut-chinh" type="button" data-hd="hd-luu"' + (n.dangLuu ? ' disabled' : '') + '>' + (n.dangLuu ? '⏳ Đang lưu…' : '💾 Lưu') + '</button>' +
+    '<button class="nut" type="button" data-hd="hd-dong">Thôi</button>' +
+    (n.ma ? '<button class="nut-xoa cach" type="button" data-hd="hd-xoa"' + (n.dangLuu ? ' disabled' : '') + '>🗑 Không còn khoản này nữa</button>' : '') + '</div></div>';
+  return h;
+}
+
+function kiemHoaDon(du, n) {
+  var loi = {};
+  if (!n.hangMuc || !timHm(du, n.hangMuc)) loi.hangMuc = 'Chọn đây là khoản gì (điện, nước…).';
+  var r = docSoTien(n.chuSoTien);
+  if (r.loi) loi.soTien = r.loi;
+  var ngay = Number(n.ngay);
+  if (!(ngay >= 1 && ngay <= 31 && Math.floor(ngay) === ngay)) loi.ngay = 'Chọn ngày trả mỗi tháng.';
+  if (!n.taiKhoan) loi.taiKhoan = 'Chọn thường trả bằng tài khoản nào.';
+  for (var k in loi) if (Object.prototype.hasOwnProperty.call(loi, k)) return { loi: loi };
+  return { loi: loi, b: { ma: n.ma, hangMuc: n.hangMuc, soTien: r.so, ngay: ngay, taiKhoan: n.taiKhoan, ghiChu: String(n.ghiChu || '').trim() } };
+}
+
+/* ---- chạm document ---- */
+
+function veHopHoc() {
+  if (typeof document === 'undefined' || (!NHAP_HD && !NHAP_QT)) return;
+  var lop = document.getElementById('lop-phu');
+  if (!lop) return;
+  var cu = lop.querySelector('.hop');
+  var cuon = cu ? cu.scrollTop : 0;
+  lop.innerHTML = NHAP_HD ? dungHopHoaDon(TT.duLieu, NHAP_HD) : dungHopQuyTac(TT.duLieu);
+  var moi = lop.querySelector('.hop');
+  if (moi) moi.scrollTop = cuon;
+}
+
+function dongHopHoc() {
+  NHAP_HD = null;
+  NHAP_QT = null;
+  dongHop();
+}
+
+function moHopQuyTac() {
+  if (!TT.duLieu || dangMoHopKhac()) return '';
+  NHAP_QT = {};
+  var html = dungHopQuyTac(TT.duLieu);
+  moHop(html);
+  return html;
+}
+
+function moHopHoaDon(ma, goiY) {
+  var du = TT.duLieu;
+  if (!du || dangMoHopKhac()) return '';
+  var b = null;
+  (Array.isArray(du.hoaDon) ? du.hoaDon : []).forEach(function (x) { if (x && x.ma === ma) b = x; });
+  if (ma && !b) return '';
+  NHAP_HD = nhapHd(du, b, goiY || null);
+  var html = dungHopHoaDon(du, NHAP_HD);
+  moHop(html);
+  return html;
+}
+
+/* "✅ Đã trả — ghi khoản này": mở hộp ghi khoản điền sẵn hạng mục, số tiền khoảng, tài khoản */
+function moGhiHoaDon(ma) {
+  var du = TT.duLieu;
+  if (!du || dangMoHopKhac()) return '';
+  var b = null;
+  (Array.isArray(du.hoaDon) ? du.hoaDon : []).forEach(function (x) { if (x && x.ma === ma) b = x; });
+  if (!b) return '';
+  NHAP = nhapMoi(du, du.homNay, du.bayGio);
+  var hm = timHm(du, b.hangMuc);
+  if (hm && !hm.an) NHAP.hangMuc = hm.ma;
+  NHAP.chuSoTien = String(Number(b.soTien) || '');
+  var tk = timTk(du, b.taiKhoan);
+  if (tk && !tk.an) NHAP.taiKhoan = tk.ma;
+  NHAP.ghiChu = tenHoaDon(du, b);
+  var html = dungHopKhoan(du, NHAP);
+  moHop(html);
+  return html;
+}
+
+function luuHoaDonThang() {
+  var n = NHAP_HD;
+  if (!n || n.dangLuu) return;
+  var r = kiemHoaDon(TT.duLieu, n);
+  if (!r.b) { n.loi = r.loi; n.loiLuu = ''; veHopHoc(); return; }
+  n.loi = {};
+  n.loiLuu = '';
+  n.dangLuu = true;
+  veHopHoc();
+  goiMay('api_luuHoaDon', [r.b, TT.ky], function (kq) {
+    n.dangLuu = false;
+    if (!kq || typeof kq !== 'object' || !kq.ky) { n.loiLuu = 'Chưa lưu được: ' + cauNgan(CHU_MAT_MANG) + '.'; veHopHoc(); return; }
+    nhanDuLieuMoi(kq);
+    if (NHAP_HD === n) dongHopHoc();
+    baoNhanh('✅ Đã lưu: ' + tenHoaDon(kq, r.b) + ' khoảng ' + dinhDangTien(r.b.soTien) + ', ngày ' + r.b.ngay + ' hằng tháng.');
+  }, function (cau) {
+    n.dangLuu = false;
+    n.loiLuu = 'Chưa lưu được: ' + cauNgan(cau) + '. Số anh gõ vẫn còn — bấm 💾 Lưu để thử lại.';
+    veHopHoc();
+  });
+}
+
+function xoaHoaDonThang() {
+  var n = NHAP_HD;
+  if (!n || n.dangLuu || !n.ma) return;
+  var ma = n.ma;
+  n.dangLuu = true;
+  veHopHoc();
+  goiMay('api_xoaHoaDon', [ma, false, TT.ky], function (kq) {
+    n.dangLuu = false;
+    if (!kq || typeof kq !== 'object' || !kq.ky) { n.loiLuu = 'Chưa bỏ được: ' + cauNgan(CHU_MAT_MANG) + '.'; veHopHoc(); return; }
+    nhanDuLieuMoi(kq);
+    if (NHAP_HD === n) dongHopHoc();
+    baoNhanh('Đã bỏ khoản hằng tháng.', '↩️ Hoàn tác', function () { goiHoc('api_xoaHoaDon', [ma, true], 'Đã lấy lại khoản hằng tháng.'); });
+  }, function (cau) {
+    n.dangLuu = false;
+    n.loiLuu = 'Chưa bỏ được: ' + cauNgan(cau) + '.';
+    veHopHoc();
+  });
+}
+
+/* Gửi một việc nhỏ (không có hộp), báo kết quả bằng báo nhanh. tiep(kq) chạy sau khi nhận số mới. */
+function goiHoc(ten, thamSo, chuXong, tiep) {
+  if (DANG_HOC) return;
+  DANG_HOC = true;
+  baoNhanh('⏳ Đang lưu…');
+  goiMay(ten, thamSo.concat([TT.ky]), function (kq) {
+    DANG_HOC = false;
+    if (!kq || typeof kq !== 'object' || !kq.ky) { baoNhanh('Chưa lưu được: ' + cauNgan(CHU_MAT_MANG) + '. Bấm lại để thử.'); return; }
+    nhanDuLieuMoi(kq);
+    if (NHAP_QT) veHopHoc();
+    if (tiep) tiep(kq); else if (chuXong) baoNhanh(chuXong);
+  }, function (cau) {
+    DANG_HOC = false;
+    baoNhanh('Chưa lưu được: ' + cauNgan(cau) + '. Bấm lại để thử.');
+  });
+}
+
+/* Sau khi lưu: em vừa học được / vừa bỏ một cách xếp thì báo (kèm nút "Đừng tự xếp"). Trả true nếu đã báo. */
+function baoHoc(kq, chuDau) {
+  var h = kq && kq.hoc;
+  if (h && Array.isArray(h.moi) && h.moi.length) {
+    var q = h.moi[0];
+    baoNhanh((chuDau ? chuDau + ' ' : '') + '🏷️ Từ nay khoản “' + String(q.chu).toUpperCase() + '” em xếp sẵn vào ' + tenDich(kq, q.dich) +
+      (h.soXepThem ? ' (xếp sẵn luôn ' + h.soXepThem + ' khoản đang chờ)' : '') + '.', 'Đừng tự xếp', function () {
+      goiHoc('api_datQuyTac', [q.ma, false], 'Đã thôi tự xếp khoản “' + String(q.chu).toUpperCase() + '”.');
+    });
+    return true;
+  }
+  if (h && Array.isArray(h.bo) && h.bo.length) {
+    baoNhanh((chuDau ? chuDau + ' ' : '') + 'Em thôi xếp “' + String(h.bo[0].chu).toUpperCase() + '” như cũ, sẽ học lại theo cách anh vừa chọn.');
+    return true;
+  }
+  return false;
+}
+
+var HD_HOC = ['ghep-dung', 'ghep-khong', 'xep-san-luu', 'qt-mo', 'qt-dong', 'qt-bo', 'hd-mo', 'hd-dong', 'hd-luu', 'hd-xoa', 'hd-tk',
+  'hd-tra', 'hd-goi-y', 'hd-goi-y-bo'];
+
+function xuLyBamHoc(hd, el) {
+  var du = TT.duLieu;
+  var ma = el.getAttribute('data-ma') || '';
+  if (hd === 'ghep-dung') {
+    var kieu = el.getAttribute('data-kieu') || '';
+    var voi = el.getAttribute('data-voi') || '';
+    if (NHAP && NHAP.ma === ma) dongHop();
+    goiHoc('api_ghep', [ma, kieu, voi], '', function (kq) {
+      var ht = kq.hoanTacGhep || { ma: ma, kieu: kieu, hangMuc: '' };
+      baoNhanh(kieu === 'trung' ? '✅ Đã bỏ dòng thư trùng — tiền không bị trừ hai lần.' : '✅ Đã ghi là trả thẻ ' + tenTaiKhoan(kq, voi) + ' — không tính là đã tiêu.',
+        '↩️ Hoàn tác', function () { goiHoc('api_boGhep', [ht.ma, ht.kieu, ht.hangMuc], 'Đã để lại như cũ.'); });
+    });
+  } else if (hd === 'ghep-khong') {
+    var khoa = el.getAttribute('data-khoa') || '';
+    goiHoc('api_khongGhep', [ma, khoa, true], '', function () {
+      baoNhanh('Đã ghi: không phải. Em không hỏi lại cặp này.', '↩️ Hoàn tác', function () { goiHoc('api_khongGhep', [ma, khoa, false], 'Đã để lại câu hỏi.'); });
+    });
+  } else if (hd === 'xep-san-luu') {
+    var ds = dsXepSan(du).map(function (k) { return k.ma; });
+    if (!ds.length) return;
+    goiHoc('api_xacNhanXepSan', [ds], '', function (kq) {
+      var da = Array.isArray(kq.daLuu) ? kq.daLuu : ds;
+      baoNhanh('✅ Đã lưu ' + da.length + ' khoản.', '↩️ Hoàn tác', function () { goiHoc('api_choLai', [da], 'Đã để ' + da.length + ' khoản chờ lại.'); });
+    });
+  } else if (hd === 'qt-mo') moHopQuyTac();
+  else if (hd === 'qt-dong') { if (NHAP_QT) dongHopHoc(); }
+  else if (hd === 'qt-bo') {
+    var q = (du && Array.isArray(du.quyTac) ? du.quyTac : []).filter(function (x) { return x && x.ma === ma; })[0];
+    var ten = q ? '“' + String(q.chu).toUpperCase() + '”' : 'này';
+    goiHoc('api_datQuyTac', [ma, false], '', function () {
+      baoNhanh('Đã bỏ cách xếp khoản ' + ten + '.', '↩️ Hoàn tác', function () { goiHoc('api_datQuyTac', [ma, true], 'Đã lấy lại cách xếp.'); });
+    });
+  } else if (hd === 'hd-mo') moHopHoaDon(ma, null);
+  else if (hd === 'hd-dong') { if (NHAP_HD) dongHopHoc(); }
+  else if (hd === 'hd-luu') luuHoaDonThang();
+  else if (hd === 'hd-xoa') xoaHoaDonThang();
+  else if (hd === 'hd-tk') {
+    if (!NHAP_HD) return;
+    NHAP_HD.taiKhoan = ma;
+    if (NHAP_HD.loi) delete NHAP_HD.loi.taiKhoan;
+    veHopHoc();
+  } else if (hd === 'hd-tra') moGhiHoaDon(ma);
+  else if (hd === 'hd-goi-y') {
+    var hmGy = el.getAttribute('data-hm') || '';
+    var g = (du && Array.isArray(du.goiYHoaDon) ? du.goiYHoaDon : []).filter(function (x) { return x && x.hangMuc === hmGy; })[0];
+    if (g) moHopHoaDon('', g);
+  } else if (hd === 'hd-goi-y-bo') {
+    var hmBo = el.getAttribute('data-hm') || '';
+    goiHoc('api_boGoiYHoaDon', [hmBo, true], '', function () {
+      baoNhanh('Đã ghi: không phải khoản tháng nào cũng có.', '↩️ Hoàn tác', function () { goiHoc('api_boGoiYHoaDon', [hmBo, false], 'Đã để lại gợi ý.'); });
+    });
+  }
+}
+
+function xuLyNhapHd(e) {
+  var el = e.target;
+  if (!NHAP_HD || !el || !el.id) return;
+  if (el.id === 'o-hd-hm') { NHAP_HD.hangMuc = el.value; if (NHAP_HD.loi) delete NHAP_HD.loi.hangMuc; }
+  else if (el.id === 'o-hd-tien') {
+    NHAP_HD.chuSoTien = el.value;
+    if (NHAP_HD.loi) delete NHAP_HD.loi.soTien;
+    var x = document.getElementById('xem-hd-tien');
+    if (x) x.innerHTML = phanXemHd(NHAP_HD);
+  } else if (el.id === 'o-hd-ngay') { NHAP_HD.ngay = el.value; if (NHAP_HD.loi) delete NHAP_HD.loi.ngay; }
+  else if (el.id === 'o-hd-ghi') NHAP_HD.ghiChu = el.value;
+}
+
 function xuLyBam(e) {
   var el = e.target;
   while (el && el !== document && !(el.getAttribute && el.getAttribute('data-hd'))) el = el.parentNode;
@@ -5295,6 +5901,8 @@ function xuLyBam(e) {
     xuLyBamTk(hd, el);
   } else if (HD_BC.indexOf(hd) >= 0) {
     xuLyBamBc(hd, el);
+  } else if (HD_HOC.indexOf(hd) >= 0) {
+    xuLyBamHoc(hd, el); /* mốc 4 */
   } else {
     xuLyBamGhi(hd, el);
   }
@@ -5314,6 +5922,11 @@ if (typeof document !== 'undefined') {
   document.addEventListener('change', xuLyNhapNo);
   document.addEventListener('keydown', function (e) {
     if ((e.key === 'Escape' || e.key === 'Esc') && (NHAP_TRA || NHAP_LICH || NHAP_KE || NHAP_NHIEU || NHAP_LS || NHAP_SK || NHAP_XN)) { e.preventDefault(); dongHopNo(); }
+  });
+  document.addEventListener('input', xuLyNhapHd); /* mốc 4 */
+  document.addEventListener('change', xuLyNhapHd);
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'Escape' || e.key === 'Esc') && (NHAP_HD || NHAP_QT)) { e.preventDefault(); dongHopHoc(); }
   });
   document.addEventListener('input', xuLyNhapNs);
   document.addEventListener('focusout', xuLyRoiNs);
